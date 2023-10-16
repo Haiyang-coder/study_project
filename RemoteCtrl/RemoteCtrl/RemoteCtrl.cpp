@@ -10,7 +10,7 @@
 #endif
 
 
-// 唯一的应用程序对象
+// 唯一的应用程序对象first
 
 CWinApp theApp;
 
@@ -33,7 +33,7 @@ int main()
         }
         else
         {
-            // TODO: 在此处为应用程序的行为编写代码。sadasd
+            // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
         }
     }
     else
