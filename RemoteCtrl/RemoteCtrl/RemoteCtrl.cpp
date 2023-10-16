@@ -10,7 +10,7 @@
 #endif
 
 
-// 唯一的应用程序对象first
+// 唯一的应用程序对象这是first
 
 CWinApp theApp;
 
