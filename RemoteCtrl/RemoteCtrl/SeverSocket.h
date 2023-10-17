@@ -13,13 +13,17 @@ private:
 
 	CSeverSocket& operator=(const CSeverSocket&) {};
 	BOOL InitSockEnv();
-	bool InitSocket();
-	bool AcceptClient();
+	
+	
 
 public:
 	static CSeverSocket* getInstance();
 	static void releaseInstance();
-	void DealCommand();
+	bool InitSocket();
+	bool AcceptClient();
+	int DealCommand();
+	bool Send(const char* pData, size_t nize);
+	
 
 
 private:

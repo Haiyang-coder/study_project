@@ -20,9 +20,9 @@ using namespace std;
 int main()
 {
     int nRetCode = 0;
-
     HMODULE hModule = ::GetModuleHandle(nullptr);
 
+    
     if (hModule != nullptr)
     {
         // 初始化 MFC 并在失败时显示错误
@@ -35,8 +35,32 @@ int main()
         else
         {
             // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
-            //初始化套接字
+            CSeverSocket* pserver = CSeverSocket::getInstance();
+            int count = 0;
+            if (pserver->InitSocket() == false)
+            {
+                MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
+                exit(0);
+            }
+            while (pserver != nullptr)
+            {
+               
+               
+                if (pserver->AcceptClient() == false)
+                {
+                    MessageBox(NULL, _T("Accept error"), _T("Accept failed"), MB_OK | MB_ICONERROR);
+                }
+                if (count >= 3)
+                {
+                   
+                    MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
+                    exit(0);
+                }
+                count++;
+            }
 
+            int iRet = pserver->DealCommand();
+            //todo
         }
     }
     else

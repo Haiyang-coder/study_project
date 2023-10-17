@@ -6,6 +6,8 @@ CSeverSocket* CSeverSocket::m_pinstance = nullptr;
 CSeverSocket::CHelper CSeverSocket::m_helper;
 CSeverSocket::CSeverSocket()
 {
+	m_client = INVALID_SOCKET;
+	m_serv_sock = INVALID_SOCKET;
 	m_pinstance = NULL;
 	if (InitSockEnv() == FALSE)
 	{
@@ -95,16 +97,29 @@ void CSeverSocket::releaseInstance()
 	}
 }
 
-void CSeverSocket::DealCommand()
+int CSeverSocket::DealCommand()
 {
+	if (m_client == -1)
+	{
+		return -1;
+	}
 	char buffer[1024];
 	while (true)
 	{
-		recv(m_client, buffer, sizeof(buffer), 0);
-		send(m_client, buffer, sizeof(buffer), 0);
+		int len  = recv(m_client, buffer, sizeof(buffer), 0);
+		if (len <= 0)
+		{
+			return -1;
+		}
+		
 		
 	}
 	closesocket(m_client);
+}
+
+bool CSeverSocket::Send(const char* pData, size_t nize)
+{
+	return send(m_client, pData, nize, 0) > 0;
 }
 
 
