@@ -4,6 +4,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteCtrl.h"
+#include"SeverSocket.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -34,6 +35,8 @@ int main()
         else
         {
             // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
+            //初始化套接字
+
         }
     }
     else
