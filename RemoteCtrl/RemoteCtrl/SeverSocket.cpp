@@ -20,48 +20,44 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 			i += 2;
 			break;
 		}
-		//如果数据包不全，或者数据包没有完全接收到
-		if (i + 4 + 2 + 2 > nSize)
-		{
-			nSize = 0;
-			return;
-		}
-
-		nLength = *(DWORD*)(pData + i);
-		i += 4;
-		if (nLength + i > nSize)
-		{
-			//数据没有接受完整
-			nSize = 0;
-			return;
-		}
-
-		sCmd = *(WORD*)(pData + i);
-		i += 2;
-		if (nLength > 4)
-		{
-			strData.resize(nLength - 2 - 2);
-			memcpy((void*)strData.data(), pData + i, nLength - 4);
-			i += nLength - 4;
-		}
-		sSum = *(WORD*)(pData + i);
-		i += 2;
-		size_t sum = 0;
-		for (size_t j = 0; j < strData.size(); j++)
-		{
-			sum += BYTE(strData[i]) & 0xFF;
-		}
-		if (sum == sSum)
-		{
-			nSize = i;//head length data
-		}
+	}
+	//如果数据包不全，或者数据包没有完全接收到
+	if (i + 4 + 2 + 2 > nSize)
+	{
 		nSize = 0;
 		return;
-
-		
-
-
 	}
+
+	nLength = *(DWORD*)(pData + i);
+	i += 4;
+	if (nLength + i > nSize)
+	{
+		//数据没有接受完整
+		nSize = 0;
+		return;
+	}
+
+	sCmd = *(WORD*)(pData + i);
+	i += 2;
+	if (nLength > 4)
+	{
+		strData.resize(nLength - 2 - 2);
+		memcpy((void*)strData.data(), pData + i, nLength - 4);
+		i += nLength - 4;
+	}
+	sSum = *(WORD*)(pData + i);
+	i += 2;
+	size_t sum = 0;
+	for (size_t j = 0; j < strData.size(); j++)
+	{
+		sum += BYTE(strData[i]) & 0xFF;
+	}
+	if (sum == sSum)
+	{
+		nSize = i;//head length data
+	}
+	nSize = 0;
+	return;
 }
 
 CPacket::CPacket(const CPacket& packet)
@@ -207,7 +203,7 @@ int CSeverSocket::DealCommand()
 			return -1;
 		}
 		index += len;
-		len = index;
+		//len = index;
 		CPacket packet((BYTE*)buffer, len);
 		m_packet = packet;
 		if (len > 0)
