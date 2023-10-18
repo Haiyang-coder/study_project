@@ -21,7 +21,7 @@ public:
 	DWORD nLength = 0;//数据长度（从控制命令到校验的长度）
 	WORD sCmd = 0;//控制命令
 	std::string strData = "";//数据
-	WORD sSum = 0;//校验
+	WORD sSum = 0;//校验(只校验数据部分)
 	std::string strOut;	//整個包的數據
 
 private:

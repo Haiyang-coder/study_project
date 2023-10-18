@@ -70,6 +70,8 @@ typedef struct file_info
     BOOL HaveNext;//是否还有 0无 1有
 
 }FILEINFO, *PFILEINFO;
+
+
 int MakeDirectoryInfo()
 {
     std::string strPath;//指定的路径
@@ -94,8 +96,8 @@ int MakeDirectoryInfo()
     }
    
     _finddata_t fdata;
-    int hfind = 0;
-    if (_findfirst("*", &fdata) == -1)
+    int hfind = _findfirst("*", &fdata);
+    if (hfind == -1)
     {
         OutputDebugStringA("没有找到任何文件");
         return -3;
@@ -116,6 +118,39 @@ int MakeDirectoryInfo()
     CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
     CSeverSocket::getInstance()->Send(pack);
     return 0;
+}
+
+int RunFile()
+{
+    std::string strPath = "";
+    CSeverSocket::getInstance()->GetFilePath(strPath);
+    ShellExecuteA(NULL, NULL, strPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    CPacket pack(3, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
+    return 0;
+}
+
+int DownLoadFile()
+{
+    std::string strPath = "";
+    CSeverSocket::getInstance()->GetFilePath(strPath);
+    FILE* pFile = fopen(strPath.c_str(), "rb");
+    if (pFile == NULL)
+    {
+        CPacket pack(4, NULL, 0);
+        CSeverSocket::getInstance()->Send(pack);
+        return -1;
+    }
+    char buffer[1024];
+    size_t rlen = 0;
+    do {
+        rlen = fread(buffer, 1, 1024, pFile);
+        CPacket pack(4, (BYTE*)buffer, rlen);
+        CSeverSocket::getInstance()->Send(pack);
+    } while (rlen >= 1024);
+    CPacket pack(4, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
+    fclose(pFile);
 }
 
 int main()
@@ -173,6 +208,12 @@ int main()
             case 2://查看指定目录下面的文件
                 MakeDirectoryInfo();
             default:
+                break;
+            case 3://打开文件
+                RunFile();
+                break;
+            case 4:
+                DownLoadFile();
                 break;
             }
             
