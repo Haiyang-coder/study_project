@@ -89,7 +89,7 @@ int MakeDirectoryInfo()
         finfo.ISDirectory = TRUE;
         finfo.HaveNext = FALSE;
         listFIleInfos.push_back(finfo);
-        CPacket pack(2, (BYTE*) & finfo, sizeof(finfo));
+        CPacket pack(2, (BYTE*) & finfo, sizeof(finfo ));
         CSeverSocket::getInstance()->Send(pack);
         OutputDebugStringA("没有权限访问目录");
         return -2;
@@ -134,20 +134,33 @@ int DownLoadFile()
 {
     std::string strPath = "";
     CSeverSocket::getInstance()->GetFilePath(strPath);
-    FILE* pFile = fopen(strPath.c_str(), "rb");
-    if (pFile == NULL)
+    long long data = 0;
+    FILE* pFile = NULL;
+    //这里用fopen_s是安全打开方式，因为fopen有可能出现
+    //返回了句柄但是你无法操作文件的现象
+    errno_t err = fopen_s(&pFile, strPath.c_str(), "rb");
+    if (err != 0)
     {
-        CPacket pack(4, NULL, 0);
+        CPacket pack(4, (BYTE*)&data, 8);
         CSeverSocket::getInstance()->Send(pack);
         return -1;
     }
-    char buffer[1024];
-    size_t rlen = 0;
-    do {
-        rlen = fread(buffer, 1, 1024, pFile);
-        CPacket pack(4, (BYTE*)buffer, rlen);
-        CSeverSocket::getInstance()->Send(pack);
-    } while (rlen >= 1024);
+    if (pFile != NULL)
+    {
+        //先发给用户这个文件有多大
+        fseek(pFile, 0, SEEK_END);
+        data = _ftelli64(pFile);
+        CPacket head(4, (BYTE*)&data, 8);
+        fseek(pFile, 0, SEEK_SET);
+        char buffer[1024];
+        size_t rlen = 0;
+        do {
+            rlen = fread(buffer, 1, 1024, pFile);
+            CPacket pack(4, (BYTE*)buffer, rlen);
+            CSeverSocket::getInstance()->Send(pack);
+        } while (rlen >= 1024);
+        
+    }
     CPacket pack(4, NULL, 0);
     CSeverSocket::getInstance()->Send(pack);
     fclose(pFile);
