@@ -29,6 +29,19 @@ private:
 };
 #pragma pack(pop)
 
+typedef struct MOUSEEVENT
+{
+	MOUSEEVENT()
+	{
+		nAction = 0;
+		nButton = -1;
+		ptXY.x = 0;
+		ptXY.y = 0;
+	}
+	WORD nAction;//µã»÷ ÒÆ¶¯ Ë«»÷
+	WORD nButton;//×ó¼ü ÓÒ¼ü ÖÐ½¨
+	POINT ptXY; //×ø±ê
+}MOUSEEV, *PMOUSEEV;
 
 class CSeverSocket
 {
@@ -53,6 +66,7 @@ public:
 	bool Send(const char* pData, size_t nize);
 	bool Send(CPacket& pack);
 	bool GetFilePath(std::string& strPath);
+	bool GetMouseEvent(MOUSEEV& mouse);
 	
 
 
