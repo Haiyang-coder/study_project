@@ -7,6 +7,7 @@
 #include"SeverSocket.h"
 #include<direct.h>
 #include<Windows.h>
+#include<atlimage.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -192,11 +193,7 @@ int MouseEvent()
         default:
             break;
         }
-        //不是一开始就设置了鼠标的坐标了吗
-        if (nFlags != 8)
-        {
-            SetCursorPos(mouse.ptXY.x, mouse.ptXY.y);
-        }
+       
         switch (mouse.nAction)
         {
         case 0://单击
@@ -216,7 +213,7 @@ int MouseEvent()
             break;
         }
 
-        switch (mouse.nAction)
+        switch (nFlags)
         {
         case 0x11://左键单击
             //GetMessageExtraInfo 获得当前系统中的键盘鼠标的额外信息
@@ -268,7 +265,7 @@ int MouseEvent()
             mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, GetMessageExtraInfo());
             break;
         case 0x08://鼠标移动
-            mouse_event(MOUSEEVENTF_MOVE, mouse.ptXY.x, mouse.ptXY.y, 0, GetMessageExtraInfo());
+            //mouse_event(MOUSEEVENTF_MOVE, mouse.ptXY.x, mouse.ptXY.y, 0, GetMessageExtraInfo());
             break;
         default:
             break;
@@ -285,6 +282,46 @@ int MouseEvent()
     ;
     return 0;
 }
+
+
+int SendScreen()
+{
+    CImage screen;//GDI
+    //获取当前设备上下文
+    HDC hScreen =  ::GetDC(NULL);
+    //位宽
+    //255*255*255 这就是24比特的色彩表示 加上透明度就是32比特了
+    int nBitPerPixel = GetDeviceCaps(hScreen, BITSPIXEL);
+    int nWidth = GetDeviceCaps(hScreen, HORZRES);
+    int nHeight = GetDeviceCaps(hScreen, VERTRES);
+    screen.Create(nWidth, nHeight, nBitPerPixel);
+    BitBlt(screen.GetDC(), 0, 0, 1920, 1020, hScreen, 0, 0, SRCCOPY);
+    ReleaseDC(NULL, hScreen);
+   
+    auto hMem = GlobalAlloc(GMEM_MOVEABLE, 0);
+    IStream* PStream = NULL;
+    HRESULT ret =  CreateStreamOnHGlobal(hMem, TRUE, &PStream);
+    if (ret == S_OK)
+    {
+        screen.Save(PStream, Gdiplus::ImageFormatPNG);
+        LARGE_INTEGER bg = { 0 };
+        PStream->Seek(bg, STREAM_SEEK_SET, NULL);
+        PBYTE pData = (PBYTE) GlobalLock(hMem);
+        SIZE_T nSize = GlobalSize(hMem);
+        CPacket pack(6, pData, nSize);
+        CSeverSocket::getInstance()->Send(pack);
+        GlobalUnlock(hMem);
+
+        
+    }
+    PStream->Release();
+    GlobalFree(hMem);
+    screen.ReleaseDC();
+    return 0;
+}
+
+
+
 int main()
 {
     int nRetCode = 0;
@@ -331,7 +368,7 @@ int main()
             //int iRet = pserver->DealCommand();
             //todo
 
-            int iCmd = 1;
+            int iCmd = 6;
             switch (iCmd)
             {
             case 1://产看磁盘的分区
@@ -339,17 +376,21 @@ int main()
                 break;
             case 2://查看指定目录下面的文件
                 MakeDirectoryInfo();
-            default:
-                break;
             case 3://打开文件
                 RunFile();
                 break;
             case 4://下载文件
                 DownLoadFile();
                 break;
-            case 5:
+            case 5://鼠标事件操作
                 MouseEvent();
                 break;
+            case 6://屏幕远程监控==发送屏幕的截图
+                SendScreen();
+                break;
+            default:
+                break;
+            
             }
             
         }
