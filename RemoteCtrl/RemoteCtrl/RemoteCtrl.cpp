@@ -320,12 +320,42 @@ int SendScreen()
     return 0;
 }
 
+#include"LockDialog.h"
+CLockDialog dlg;
 int LockMachine()
 {
     //让用户知道你被锁机了
     //最顶层显示
     //留一个关闭的接口
-
+    //模态（不结束后面不能激活独占）和非模态选哪个
+    dlg.Create(IDD_DIALOG_INFO, NULL);
+    dlg.ShowWindow(SW_SHOW);
+    //让窗口铺满屏幕
+    CRect rect;
+    //rect.left = 0;
+    //rect.top = 0;
+    //rect.right = GetSystemMetrics(SM_CXFULLSCREEN);
+    //rect.bottom = GetSystemMetrics(SM_CYFULLSCREEN) - 50;
+    //窗口置顶
+    dlg.SetWindowPos(&dlg.wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+   //限制鼠标的功能
+    ShowCursor(false);
+   
+    //限制鼠标活动范围
+    dlg.GetWindowRect(&rect);
+    ClipCursor(rect);
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0))
+    {
+        TranslateMessage(&msg); 
+        DispatchMessage(&msg);
+        if (msg.wParam == 0x1b)
+        {
+            dlg.DestroyWindow();
+            break;
+        }
+    }
+    ShowCursor(true);
     return 0;
 }
  
@@ -381,8 +411,8 @@ int main()
             //}
             //int iRet = pserver->DealCommand();
             //todo
-
-            int iCmd = 6;
+           
+            int iCmd = 7;
             switch (iCmd)
             {
             case 1://产看磁盘的分区
