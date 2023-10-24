@@ -320,7 +320,21 @@ int SendScreen()
     return 0;
 }
 
+int LockMachine()
+{
+    //让用户知道你被锁机了
+    //最顶层显示
+    //留一个关闭的接口
 
+    return 0;
+}
+ 
+int UNLockMachine()
+{
+
+
+    return 0;
+}
 
 int main()
 {
@@ -387,6 +401,12 @@ int main()
                 break;
             case 6://屏幕远程监控==发送屏幕的截图
                 SendScreen();
+                break;
+            case 7://锁机
+                LockMachine();
+                break;
+            case 8://锁机
+                UNLockMachine();
                 break;
             default:
                 break;
