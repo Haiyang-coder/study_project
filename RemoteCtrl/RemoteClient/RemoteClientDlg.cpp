@@ -53,6 +53,8 @@ END_MESSAGE_MAP()
 
 CRemoteClientDlg::CRemoteClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_REMOTECLIENT_DIALOG, pParent)
+	, m_serv_ip(0)
+	, m_serv_port(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -60,6 +62,8 @@ CRemoteClientDlg::CRemoteClientDlg(CWnd* pParent /*=nullptr*/)
 void CRemoteClientDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_IPAddress(pDX, edit_ip, m_serv_ip);
+	DDX_Text(pDX, edit_port, m_serv_port);
 }
 
 BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
@@ -159,6 +163,9 @@ HCURSOR CRemoteClientDlg::OnQueryDragIcon()
 
 void CRemoteClientDlg::OnBnClickedtest()
 {
+	UpdateData();
+	m_serv_ip;
+	atoi((LPCTSTR)m_serv_port) ;
 	CClientSocket* pClent = CClientSocket::getInstance();
 	bool ret = pClent->InitSocket("127.0.0.1");//todo 返回值处理
 	if (ret < 0)
