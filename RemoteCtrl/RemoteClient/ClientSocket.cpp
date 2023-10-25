@@ -173,6 +173,7 @@ bool CClientSocket::InitSocket(const std::string strIPAddress)
 	serv_adr.sin_family = AF_INET;
 	if (inet_pton(AF_INET, strIPAddress.c_str(), &serv_adr.sin_addr) != 1) {
 		AfxMessageBox("IP地址格式不正确");
+		perror("id地址不对");
 		return false;
 	}
 	serv_adr.sin_port = htons(9527);

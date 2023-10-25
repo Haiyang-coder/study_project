@@ -392,6 +392,42 @@ int UNLockMachine()
     return 0;
 }
 
+
+int ExcuteCommand(int nCmd)
+{
+    int iCmd = 7;
+    int iRet = 0;
+    switch (iCmd)
+    {
+    case 1://产看磁盘的分区
+        iRet = MakeDriverInfo();
+        break;
+    case 2://查看指定目录下面的文件
+        iRet = MakeDirectoryInfo();
+    case 3://打开文件
+        iRet = RunFile();
+        break;
+    case 4://下载文件
+        iRet = DownLoadFile();
+        break;
+    case 5://鼠标事件操作
+        iRet = MouseEvent();
+        break;
+    case 6://屏幕远程监控==发送屏幕的截图
+        iRet = SendScreen();
+        break;
+    case 7://锁机
+        iRet = LockMachine();
+        break;
+    case 8://锁机
+        iRet = UNLockMachine();
+        break;
+    default:
+        break;
+
+    }
+    return iRet;
+}
 int main()
 {
     int nRetCode = 0;
@@ -412,69 +448,37 @@ int main()
         else
         {
             // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
-            //CSeverSocket* pserver = CSeverSocket::getInstance();
-            //int count = 0;
-            //if (pserver->InitSocket() == false)
-            //{
-            //    MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
-            //    exit(0);
-            //}
-            //while (pserver != nullptr)
-            //{
-            //   
-            //   
-            //    if (pserver->AcceptClient() == false)
-            //    {
-            //        MessageBox(NULL, _T("Accept error"), _T("Accept failed"), MB_OK | MB_ICONERROR);
-            //    }
-            //    if (count >= 3)
-            //    {
-            //       
-            //        MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
-            //        exit(0);
-            //    }
-            //    count++;
-            //}
-            //int iRet = pserver->DealCommand();
-            //todo
-           
-            int iCmd = 7;
-            switch (iCmd)
+            CSeverSocket* pserver = CSeverSocket::getInstance();
+            int count = 0;
+            if (pserver->InitSocket() == false)
             {
-            case 1://产看磁盘的分区
-                MakeDriverInfo();
-                break;
-            case 2://查看指定目录下面的文件
-                MakeDirectoryInfo();
-            case 3://打开文件
-                RunFile();
-                break;
-            case 4://下载文件
-                DownLoadFile();
-                break;
-            case 5://鼠标事件操作
-                MouseEvent();
-                break;
-            case 6://屏幕远程监控==发送屏幕的截图
-                SendScreen();
-                break;
-            case 7://锁机
-                LockMachine();
-                break;
-            case 8://锁机
-                UNLockMachine();
-                break;
-            default:
-                break;
-            
+                MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
+                exit(0);
             }
-            Sleep(5000);
-            UNLockMachine();;
-            while (dlg.m_hWnd != NULL)
+            while (pserver != nullptr)
             {
-                Sleep(10);
+                if (pserver->AcceptClient() == false)
+                {
+                    MessageBox(NULL, _T("Accept error"), _T("Accept failed"), MB_OK | MB_ICONERROR);
+                }
+                if (count >= 3)
+                {
+                   
+                    MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
+                    exit(0);
+                }
+                count++;
             }
-            
+            int iRet = pserver->DealCommand();
+            if (iRet == 0)
+            {
+               iRet = ExcuteCommand(pserver->Getpack().sCmd);
+               if (iRet != 0)
+               {
+                   TRACE("执行命令失败：%d ret = %d \r\n", pserver->Getpack().sCmd, iRet);
+               }
+               pserver->CloseSocket();
+            }   
         }
     }
     else

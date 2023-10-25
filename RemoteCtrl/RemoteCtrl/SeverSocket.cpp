@@ -296,6 +296,17 @@ bool CSeverSocket::GetMouseEvent(MOUSEEV& mouse)
 	return false;
 }
 
+const CPacket& CSeverSocket::Getpack()
+{
+	return m_packet;
+}
+
+void CSeverSocket::CloseSocket()
+{
+	closesocket(m_client);
+	m_client = INVALID_SOCKET;
+}
+
 
 
 
