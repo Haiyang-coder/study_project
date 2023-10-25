@@ -298,14 +298,17 @@ int SendScreen()
     BitBlt(screen.GetDC(), 0, 0, 1920, 1020, hScreen, 0, 0, SRCCOPY);
     ReleaseDC(NULL, hScreen);
    
+    //创建了一个全局的内存块
     auto hMem = GlobalAlloc(GMEM_MOVEABLE, 0);
     IStream* PStream = NULL;
     HRESULT ret =  CreateStreamOnHGlobal(hMem, TRUE, &PStream);
     if (ret == S_OK)
     {
+        //将文件保存到内存区域,
         screen.Save(PStream, Gdiplus::ImageFormatPNG);
         LARGE_INTEGER bg = { 0 };
         PStream->Seek(bg, STREAM_SEEK_SET, NULL);
+        //获取内存指针并且上锁
         PBYTE pData = (PBYTE) GlobalLock(hMem);
         SIZE_T nSize = GlobalSize(hMem);
         CPacket pack(6, pData, nSize);
@@ -322,7 +325,8 @@ int SendScreen()
 
 #include"LockDialog.h"
 CLockDialog dlg;
-int LockMachine()
+unsigned threadid = 0;
+unsigned  threadLockDlg(void* arg)
 {
     //让用户知道你被锁机了
     //最顶层显示
@@ -338,31 +342,53 @@ int LockMachine()
     //rect.bottom = GetSystemMetrics(SM_CYFULLSCREEN) - 50;
     //窗口置顶
     dlg.SetWindowPos(&dlg.wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-   //限制鼠标的功能
+    //限制鼠标的功能
     ShowCursor(false);
-   
+
     //限制鼠标活动范围
     dlg.GetWindowRect(&rect);
     ClipCursor(rect);
+    //隐藏任务栏
+    ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_HIDE);
     MSG msg;
+    //这里的GetMessage，消息甭。20ms一次。是和线程绑定的，只能拿到这个线程内的消息
     while (GetMessage(&msg, NULL, 0, 0))
     {
-        TranslateMessage(&msg); 
+        TranslateMessage(&msg);
         DispatchMessage(&msg);
+        //按下esc键退出
         if (msg.wParam == 0x1b)
         {
-            dlg.DestroyWindow();
+           
             break;
         }
     }
     ShowCursor(true);
+    ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_SHOW);
+    dlg.DestroyWindow();
+    _endthreadex(0);
+    return 0;
+}
+int LockMachine()
+{
+    //判断是否已经锁机了
+    if ((dlg.m_hWnd == NULL) || (dlg.m_hWnd == INVALID_HANDLE_VALUE))
+    {
+        //_beginthread(threadLockDlg, 0, NULL);
+        _beginthreadex(NULL, 0, threadLockDlg, nullptr, 0, &threadid);
+    }
+    CPacket pack(7, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
+    
     return 0;
 }
  
 int UNLockMachine()
 {
-
-
+    //::SendMessage(dlg.m_hWnd,WM_KEYDOWN, 0x1b, 0x01E001);
+    PostThreadMessage(threadid ,WM_KEYDOWN, 0x1b, 0x01E001);
+    CPacket pack(7, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
     return 0;
 }
 
@@ -441,6 +467,12 @@ int main()
             default:
                 break;
             
+            }
+            Sleep(5000);
+            UNLockMachine();;
+            while (dlg.m_hWnd != NULL)
+            {
+                Sleep(10);
             }
             
         }
