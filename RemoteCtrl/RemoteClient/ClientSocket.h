@@ -2,6 +2,7 @@
 #include"pch.h"
 #include"framework.h"
 #include<string>
+#include<vector>
 
 #pragma pack(push)
 #pragma pack(1)
@@ -68,10 +69,13 @@ public:
 	bool Send(CPacket& pack);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
+	const CPacket& Getpack();
+	void closeSocket();
 
 
 
 private:
+	std::vector<char> m_buffer;
 	static CClientSocket* m_pinstance;
 	class CHelper
 	{

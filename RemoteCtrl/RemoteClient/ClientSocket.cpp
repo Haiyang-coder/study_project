@@ -4,7 +4,7 @@
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 
-
+#define BUFFER_SIZE 4096
 CPacket::CPacket()
 {
 }
@@ -139,12 +139,12 @@ CClientSocket::CClientSocket()
 		MessageBox(NULL, _T("无法初始化套接字环境"), _T("初始化错误！"), MB_OK | MB_ICONERROR);
 		exit(0);
 	}
-	m_client_sock = socket(PF_INET, SOCK_STREAM, 0);
+	
 	if (m_client_sock < 0)
 	{
 		exit(0);
 	}
-
+	m_buffer.resize(BUFFER_SIZE);
 }
 
 CClientSocket::~CClientSocket()
@@ -167,7 +167,11 @@ BOOL CClientSocket::InitSockEnv()
 
 bool CClientSocket::InitSocket(const std::string strIPAddress)
 {
-
+	if (m_client_sock != INVALID_SOCKET)
+	{
+		closeSocket();
+	}
+	m_client_sock = socket(PF_INET, SOCK_STREAM, 0);
 	sockaddr_in serv_adr;
 	memset(&serv_adr, 0, sizeof(sockaddr_in));
 	serv_adr.sin_family = AF_INET;
@@ -208,7 +212,7 @@ void CClientSocket::releaseInstance()
 
 	}
 }
-#define BUFFER_SIZE 4096
+
 int CClientSocket::DealCommand()
 {
 	if (m_client_sock == -1)
@@ -216,7 +220,7 @@ int CClientSocket::DealCommand()
 		return -1;
 	}
 	//char buffer[1024];
-	char* buffer = new char[BUFFER_SIZE];
+	char* buffer = m_buffer.data();
 	memset(buffer, 0, BUFFER_SIZE);
 	size_t index = 0;
 	while (true)
@@ -239,7 +243,6 @@ int CClientSocket::DealCommand()
 		}
 
 	}
-
 	return -1;
 }
 
@@ -282,6 +285,17 @@ bool CClientSocket::GetMouseEvent(MOUSEEV& mouse)
 		return true;
 	}
 	return false;
+}
+
+const CPacket& CClientSocket::Getpack()
+{
+	return m_packet;
+}
+
+void CClientSocket::closeSocket()
+{
+	closesocket(m_client_sock);
+	m_client_sock = INVALID_SOCKET;
 }
 
 

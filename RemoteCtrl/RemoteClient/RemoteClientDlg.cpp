@@ -164,7 +164,11 @@ void CRemoteClientDlg::OnBnClickedtest()
 	if (ret < 0)
 	{
 		AfxMessageBox("网络初始化失败");
+		return;
 	}
-	//CPacket pack;
-	//pClent->Send(pack);
+	CPacket pack(1981, NULL, 0);
+	pClent->Send(pack);
+	pClent->DealCommand();
+	TRACE("sCmd : %d\r\n", pClent->Getpack().sCmd);
+	pClent->closeSocket();
 }

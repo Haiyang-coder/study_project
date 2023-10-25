@@ -3,7 +3,7 @@
 
 
 
-
+#define BUFFER_SIZE 4096
 CPacket::CPacket()
 {
 }
@@ -56,7 +56,6 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 	{
 		nSize = i;//head length data
 	}
-	nSize = 0;
 	return;
 }
 
@@ -197,7 +196,7 @@ bool CSeverSocket::AcceptClient()
 	{
 		return false;
 	}
-	
+	TRACE("m_client : %d\r\n", m_client);
 	return true;
 }
 
@@ -220,7 +219,7 @@ void CSeverSocket::releaseInstance()
 
 	}
 }
-#define BUFFER_SIZE 4096
+
 int CSeverSocket::DealCommand()
 {
 	if (m_client == -1)
@@ -229,6 +228,11 @@ int CSeverSocket::DealCommand()
 	}
 	//char buffer[1024];
 	char* buffer = new char[BUFFER_SIZE];
+	if (buffer == NULL)
+	{
+		TRACE("ÄÚ´æ²»×ã\r\n");
+		return -2;
+	}
 	memset(buffer, 0, BUFFER_SIZE);
 	size_t index = 0;
 	while (true)
@@ -237,21 +241,23 @@ int CSeverSocket::DealCommand()
 		size_t len  = recv(m_client, buffer + index, BUFFER_SIZE - index, 0);
 		if (len <= 0)
 		{
+			delete[] buffer;
 			return -1;
 		}
 		index += len;
-		//len = index;
+		len = index;
 		CPacket packet((BYTE*)buffer, len);
 		m_packet = packet;
 		if (len > 0)
 		{
 			memmove(buffer, buffer + len, BUFFER_SIZE - len);
 			index -= len;
+			delete[] buffer;
 			return packet.sCmd;
 		}
 		
 	}
-	
+	delete[] buffer;
 	return -1;
 }
 

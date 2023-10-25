@@ -392,12 +392,18 @@ int UNLockMachine()
     return 0;
 }
 
+int TestConnect()
+{
+    CPacket pack(1981, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
+    return 0;
+}
+
 
 int ExcuteCommand(int nCmd)
 {
-    int iCmd = 7;
     int iRet = 0;
-    switch (iCmd)
+    switch (nCmd)
     {
     case 1://产看磁盘的分区
         iRet = MakeDriverInfo();
@@ -421,6 +427,9 @@ int ExcuteCommand(int nCmd)
         break;
     case 8://锁机
         iRet = UNLockMachine();
+        break;
+    case 1981://连接测试
+        iRet = TestConnect();
         break;
     default:
         break;
@@ -460,25 +469,28 @@ int main()
                 if (pserver->AcceptClient() == false)
                 {
                     MessageBox(NULL, _T("Accept error"), _T("Accept failed"), MB_OK | MB_ICONERROR);
+                    if (count >= 3)
+                    {
+
+                        MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
+                        exit(0);
+                    }
+                    count++;
                 }
-                if (count >= 3)
+                int iRet = pserver->DealCommand();
+                if (iRet > 0)
                 {
-                   
-                    MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
-                    exit(0);
+                    iRet = ExcuteCommand(pserver->Getpack().sCmd);
+                    if (iRet != 0)
+                    {
+                        TRACE("执行命令失败：%d ret = %d \r\n", pserver->Getpack().sCmd, iRet);
+                    }
+                    pserver->CloseSocket();
                 }
-                count++;
+
             }
-            int iRet = pserver->DealCommand();
-            if (iRet == 0)
-            {
-               iRet = ExcuteCommand(pserver->Getpack().sCmd);
-               if (iRet != 0)
-               {
-                   TRACE("执行命令失败：%d ret = %d \r\n", pserver->Getpack().sCmd, iRet);
-               }
-               pserver->CloseSocket();
-            }   
+           
+           
         }
     }
     else
