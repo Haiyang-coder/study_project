@@ -57,7 +57,6 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 	{
 		nSize = i;//head length data
 	}
-	nSize = 0;
 	return;
 }
 
@@ -165,7 +164,7 @@ BOOL CClientSocket::InitSockEnv()
 	return TRUE;
 }
 
-bool CClientSocket::InitSocket(const std::string strIPAddress)
+bool CClientSocket::InitSocket(DWORD strIPAddress, int nPort)
 {
 	if (m_client_sock != INVALID_SOCKET)
 	{
@@ -174,13 +173,14 @@ bool CClientSocket::InitSocket(const std::string strIPAddress)
 	m_client_sock = socket(PF_INET, SOCK_STREAM, 0);
 	sockaddr_in serv_adr;
 	memset(&serv_adr, 0, sizeof(sockaddr_in));
+	serv_adr.sin_addr.s_addr = htonl(strIPAddress);
 	serv_adr.sin_family = AF_INET;
-	if (inet_pton(AF_INET, strIPAddress.c_str(), &serv_adr.sin_addr) != 1) {
+	if (serv_adr.sin_addr.s_addr == INADDR_NONE) {
 		AfxMessageBox("IP地址格式不正确");
-		perror("id地址不对");
+		perror("ip地址不对");
 		return false;
 	}
-	serv_adr.sin_port = htons(9527);
+	serv_adr.sin_port = htons(nPort);
 	int ret = connect(m_client_sock, (sockaddr*)&serv_adr, sizeof(serv_adr));
 	if (ret < 0)
 	{

@@ -63,7 +63,7 @@ private:
 public:
 	static CClientSocket* getInstance();
 	static void releaseInstance();
-	bool InitSocket(const std::string strIPAddress);
+	bool InitSocket(DWORD, int nPort);
 	int DealCommand();
 	bool Send(const char* pData, size_t nize);
 	bool Send(CPacket& pack);

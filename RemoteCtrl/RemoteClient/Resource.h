@@ -1,6 +1,6 @@
-Ôªø//{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ ÁîüÊàêÁöÑÂåÖÂê´Êñá‰ª∂„ÄÇ
-// ‰æõ RemoteClient.rc ‰ΩøÁî®
+//{{NO_DEPENDENCIES}}
+// Microsoft Visual C++ …˙≥…µƒ∞¸∫¨Œƒº˛°£
+// π© RemoteClient.rc  π”√
 //
 #define IDM_ABOUTBOX                    0x0010
 #define IDD_ABOUTBOX                    100
@@ -8,6 +8,13 @@
 #define IDD_REMOTECLIENT_DIALOG         102
 #define IDR_MAINFRAME                   128
 #define button_test                     1000
+#define edit_port                       1001
+#define edit                            1002
+#define edit_ip                         1002
+#define treedir                         1004
+#define listFile                        1005
+#define IDC_BUTTON1                     1006
+#define button_file                     1008
 
 // Next default values for new objects
 // 
@@ -15,7 +22,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1001
+#define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

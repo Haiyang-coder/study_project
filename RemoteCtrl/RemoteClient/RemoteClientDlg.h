@@ -21,6 +21,9 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
 
+
+private:
+	int SendCommandPacket(int nCmd, BYTE* pData = NULL, size_t length = 0);
 // 实现
 protected:
 	HICON m_hIcon;
@@ -33,4 +36,9 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedtest();
+	DWORD m_serv_ip;
+	CString m_serv_port;
+	afx_msg void OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnBnClickedfile();
+	CTreeCtrl m_tree;
 };

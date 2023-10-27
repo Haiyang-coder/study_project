@@ -53,6 +53,8 @@ END_MESSAGE_MAP()
 
 CRemoteClientDlg::CRemoteClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_REMOTECLIENT_DIALOG, pParent)
+	, m_serv_ip(0)
+	, m_serv_port(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -60,6 +62,33 @@ CRemoteClientDlg::CRemoteClientDlg(CWnd* pParent /*=nullptr*/)
 void CRemoteClientDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_IPAddress(pDX, edit_ip, m_serv_ip);
+	DDX_Text(pDX, edit_port, m_serv_port);
+	DDX_Control(pDX, treedir, m_tree);
+}
+
+int CRemoteClientDlg::SendCommandPacket(int nCmd, BYTE* pData, size_t length)
+{
+	CClientSocket* pClent = CClientSocket::getInstance();
+	bool ret = pClent->InitSocket(m_serv_ip, atoi((LPCTSTR)m_serv_port));//todo 返回值处理
+	if (ret == false)
+	{
+		AfxMessageBox("网络初始化失败");
+		return -1;
+	}
+	CPacket pack(nCmd, pData, length);
+	pClent->Send(pack);
+	int iRet = pClent->DealCommand();
+	if (iRet == -1)
+	{
+		AfxMessageBox("处理命令失败");
+		TRACE("sCmd : %d\r\n", pClent->Getpack().sCmd);
+		pClent->closeSocket();
+		return -1;
+	}
+	TRACE("sCmd : %d\r\n", pClent->Getpack().sCmd);
+	pClent->closeSocket();
+	return nCmd;
 }
 
 BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
@@ -67,6 +96,8 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(button_test, &CRemoteClientDlg::OnBnClickedtest)
+	
+	ON_BN_CLICKED(button_file, &CRemoteClientDlg::OnBnClickedfile)
 END_MESSAGE_MAP()
 
 
@@ -100,7 +131,10 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
-
+	UpdateData();
+	m_serv_ip = 0x7f000001;
+	m_serv_port = _T("9527");
+	UpdateData(false);
 	// TODO: 在此添加额外的初始化代码
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -159,16 +193,44 @@ HCURSOR CRemoteClientDlg::OnQueryDragIcon()
 
 void CRemoteClientDlg::OnBnClickedtest()
 {
-	CClientSocket* pClent = CClientSocket::getInstance();
-	bool ret = pClent->InitSocket("127.0.0.1");//todo 返回值处理
-	if (ret < 0)
+	//true将控件的值赋值给成员变量
+	UpdateData();
+	SendCommandPacket(1981);
+}
+
+
+void CRemoteClientDlg::OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+}
+
+
+
+
+void CRemoteClientDlg::OnBnClickedfile()
+{
+	//取到根目录的文件信息
+	int ret = SendCommandPacket(1);
+	if(ret == -1)
 	{
-		AfxMessageBox("网络初始化失败");
+		AfxMessageBox(_T("命令处理失败"));
 		return;
 	}
-	CPacket pack(1981, NULL, 0);
-	pClent->Send(pack);
-	pClent->DealCommand();
-	TRACE("sCmd : %d\r\n", pClent->Getpack().sCmd);
-	pClent->closeSocket();
+	CClientSocket* pClent = CClientSocket::getInstance();
+	auto drivers = pClent->Getpack().strData;
+	std::string dr;
+	m_tree.DeleteAllItems();
+	for (size_t i = 0; i < drivers.size(); i++)
+	{
+		if (drivers[i] == ',')
+		{
+			dr += ':';
+			m_tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
+			dr.clear();
+			continue;
+		}
+		dr += drivers[i];
+	}
 }
