@@ -43,6 +43,22 @@ typedef struct MOUSEEVENT
 	POINT ptXY; //坐标
 }MOUSEEV, *PMOUSEEV;
 
+typedef struct file_info
+{
+	file_info()
+	{
+		IsInvalid = 0;
+		ISDirectory = -1;
+		memset(szFileName, 0, sizeof(szFileName));
+		HaveNext = TRUE;
+	}
+	BOOL IsInvalid;//是否有效
+	char szFileName[256];
+	BOOL ISDirectory;//是否为目录， 0否 1是
+	BOOL HaveNext;//是否还有 0无 1有
+
+}FILEINFO, * PFILEINFO;
+
 class CSeverSocket
 {
 private: 

@@ -23,7 +23,14 @@ public:
 
 
 private:
-	int SendCommandPacket(int nCmd, BYTE* pData = NULL, size_t length = 0);
+	//1查看磁盘分区
+	//2查看指定目录下的文件
+	//3打开文件
+	//4下载文件
+	//返回值是命令号，如果小于0则是错误
+	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
+	CString GetPath(HTREEITEM htree);
+	void DeleteTreeChileItem(HTREEITEM htree);
 // 实现
 protected:
 	HICON m_hIcon;
@@ -41,4 +48,5 @@ public:
 	afx_msg void OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBnClickedfile();
 	CTreeCtrl m_tree;
+	afx_msg void OnNMDblclktreedir(NMHDR* pNMHDR, LRESULT* pResult);
 };

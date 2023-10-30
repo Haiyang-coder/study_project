@@ -16,9 +16,9 @@ public:
 	CPacket& operator=(const CPacket& packet);
 	CPacket(WORD nCmd, const BYTE* pData, size_t nSize);
 	~CPacket();
-
+public:
 	int Size();
-	const char* Data();
+	const char* const Data();
 public:
 	WORD sHead = 0;//数据头
 	DWORD nLength = 0;//数据长度（从控制命令到校验的长度）
@@ -45,6 +45,23 @@ typedef struct MOUSEEVENT
 	WORD nButton;//左键 右键 中建
 	POINT ptXY; //坐标
 }MOUSEEV, * PMOUSEEV;
+
+typedef struct file_info
+{
+	file_info()
+	{
+		IsInvalid = 0;
+		ISDirectory = -1;
+		memset(szFileName, 0, sizeof(szFileName));
+		HaveNext = TRUE;
+	}
+	BOOL IsInvalid;//是否有效
+	char szFileName[256];
+	BOOL ISDirectory;//是否为目录， 0否 1是
+	BOOL HaveNext;//是否还有 0无 1有
+
+}FILEINFO, * PFILEINFO;
+
 
 class CClientSocket
 {

@@ -112,7 +112,7 @@ int CPacket::Size()
 	return nLength + 6;
 }
 
-const char* CPacket::Data()
+const char* const CPacket::Data()
 {
 	strOut.resize(nLength + 6);
 	BYTE* pData = (BYTE*)strOut.c_str();

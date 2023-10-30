@@ -36,6 +36,7 @@ void Dump(BYTE* pData, size_t nSize)
     OutputDebugStringA(strOut.c_str());
  
 }
+
 int MakeDriverInfo()
 {
     std::string result = "";
@@ -56,21 +57,7 @@ int MakeDriverInfo()
 
 #include<io.h>
 #include<list>
-typedef struct file_info
-{
-    file_info()
-    {
-        IsInvalid = 0;
-        ISDirectory = -1;
-        memset(szFileName, 0, sizeof(szFileName));
-        HaveNext = TRUE;
-    }
-    BOOL IsInvalid;//是否有效
-    char szFileName[256];
-    BOOL ISDirectory;//是否为目录， 0否 1是
-    BOOL HaveNext;//是否还有 0无 1有
 
-}FILEINFO, *PFILEINFO;
 
 
 int MakeDirectoryInfo()
@@ -84,33 +71,35 @@ int MakeDirectoryInfo()
     }
     if (_chdir(strPath.c_str()) != 0 )
     {
-        FILEINFO finfo;
-        finfo.IsInvalid = TRUE;
-        memcpy(finfo.szFileName, strPath.c_str(), strPath.length());
-        finfo.ISDirectory = TRUE;
-        finfo.HaveNext = FALSE;
-        listFIleInfos.push_back(finfo);
-        CPacket pack(2, (BYTE*) & finfo, sizeof(finfo ));
+        FILEINFO finfo1;
+        finfo1.HaveNext = FALSE;
+        listFIleInfos.push_back(finfo1);
+        CPacket pack(2, (BYTE*) & finfo1, sizeof(finfo1 ));
         CSeverSocket::getInstance()->Send(pack);
         OutputDebugStringA("没有权限访问目录");
         return -2;
     }
    
     _finddata_t fdata;
-    int hfind = _findfirst("*", &fdata);
+    intptr_t hfind;
+    hfind = _findfirst("*.*", &fdata);
     if (hfind == -1)
     {
         OutputDebugStringA("没有找到任何文件");
+        FILEINFO finfo2;
+        finfo2.HaveNext = FALSE;
+        CPacket pack(2, (BYTE*)&finfo2, sizeof(finfo2));
+        CSeverSocket::getInstance()->Send(pack);
         return -3;
     }
 
     do
     {
-        FILEINFO finfo;
-        finfo.ISDirectory = (fdata.attrib & _A_SUBDIR) != 0;
-        memcpy(finfo.szFileName, fdata.name, strlen(fdata.name));
-        //listFIleInfos.push_back(finfo);
-        CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
+        FILEINFO finfo3;
+        finfo3.ISDirectory = (fdata.attrib & _A_SUBDIR) != 0;
+        memcpy(finfo3.szFileName, fdata.name, strlen(fdata.name));
+        TRACE("%s\r\n", finfo3.szFileName);
+        CPacket pack(2, (BYTE*)&finfo3, sizeof(finfo3));
         CSeverSocket::getInstance()->Send(pack);
     } while (!_findnext(hfind, &fdata));
 
@@ -410,6 +399,7 @@ int ExcuteCommand(int nCmd)
         break;
     case 2://查看指定目录下面的文件
         iRet = MakeDirectoryInfo();
+        break;
     case 3://打开文件
         iRet = RunFile();
         break;

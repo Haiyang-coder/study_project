@@ -4,6 +4,7 @@
 
 
 #define BUFFER_SIZE 4096
+extern void Dump(BYTE* pData, size_t nSize);
 CPacket::CPacket()
 {
 }
@@ -274,9 +275,12 @@ bool CSeverSocket::Send(CPacket& pack)
 {
 	if (m_client == -1)
 	{
+		Dump((BYTE*)pack.Data(), pack.Size());
 		return false;
 	}
-	return  send(m_client, pack.Data(), pack.Size(), 0);
+	Dump((BYTE*)pack.Data(), pack.Size());
+	bool end = send(m_client, pack.Data(), pack.Size(), 0) > 0;
+	return end;
 }
 
 bool CSeverSocket::GetFilePath(std::string& strPath)
