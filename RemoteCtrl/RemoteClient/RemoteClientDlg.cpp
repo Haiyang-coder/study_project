@@ -68,6 +68,37 @@ void CRemoteClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, listFile, m_list);
 }
 
+void CRemoteClientDlg::LoadFileCurrent()
+{
+	auto htree = m_tree.GetSelectedItem();
+	auto  strPath = GetPath(htree);
+
+	m_list.DeleteAllItems();
+	int nCmd = SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
+	PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
+	CClientSocket* pClient = CClientSocket::getInstance();
+	//看一下双击的文件是否还有下一个
+	//有的话进行马上进行处理
+	while (pInfo->HaveNext == TRUE)
+	{
+		if (!pInfo->ISDirectory)
+		{
+			m_list.InsertItem(0, pInfo->szFileName);
+		}
+
+		int cmd = pClient->DealCommand();
+		if (cmd < 0)
+		{
+			break;
+		}
+		pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
+		TRACE("ack:%d \r\n", cmd);
+	}
+
+
+	pClient->closeSocket();
+}
+
 int CRemoteClientDlg::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length)
 {
 	CClientSocket* pClent = CClientSocket::getInstance();
@@ -397,6 +428,7 @@ void CRemoteClientDlg::Ondownloadfile()
 	if (pfile == NULL)
 	{
 		AfxMessageBox("无法打开本地指定的文件");
+		fclose(pfile);
 		return;
 	}
 	//获取文件的绝对路径
@@ -410,6 +442,7 @@ void CRemoteClientDlg::Ondownloadfile()
 	{
 		AfxMessageBox("执行下载命令失败了");
 		TRACE("下载失败：%d\r\n", ret);
+		fclose(pfile);
 		return;
 	}
 	CClientSocket* pClient = CClientSocket::getInstance();
@@ -418,6 +451,8 @@ void CRemoteClientDlg::Ondownloadfile()
 	if (nLenth <= 0)
 	{
 		AfxMessageBox("文件长度为0，或无法读取文件");
+		fclose(pfile);
+		pClient->closeSocket();
 		return ;
 	}
 	
@@ -446,11 +481,34 @@ void CRemoteClientDlg::Ondownloadfile()
 
 void CRemoteClientDlg::Ondeletefile()
 {
-	// TODO: 在此添加命令处理程序代码
+	HTREEITEM hSelected = m_tree.GetSelectedItem();
+	CString strPath = GetPath(hSelected);
+	int seleced = m_list.GetSelectionMark();
+	CString strFile = m_list.GetItemText(seleced, 0);
+	strFile = strPath + strFile;
+	int ret = SendCommandPacket(9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	if (ret < 0)
+	{
+		AfxMessageBox("删除文件失败，请重试");
+		TRACE("文件传输失败：%d\r\n", ret);
+		return;
+	}
+	LoadFileCurrent();
 }
 
 
 void CRemoteClientDlg::Onopenfile()
 {
-	// TODO: 在此添加命令处理程序代码
+	HTREEITEM hSelected = m_tree.GetSelectedItem();
+	CString strPath = GetPath(hSelected);
+	int seleced = m_list.GetSelectionMark();
+	CString strFile = m_list.GetItemText(seleced, 0);
+	strFile = strPath + strFile;
+	int ret = SendCommandPacket(3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	if (ret < 0)
+	{
+		AfxMessageBox("打开文件失败，请重试");
+		TRACE("文件传输失败：%d\r\n", ret);
+		return;
+	}
 }

@@ -390,6 +390,18 @@ int TestConnect()
     return 0;
 }
 
+int DeleteLocalFile()
+{
+    std::string strpath = "";
+    CSeverSocket::getInstance()->GetFilePath(strpath);
+    //进行一个字符集的转变
+    //TCHAR sPath[MAX_PATH];
+    //mbstowcs(sPath, strpath.c_str(), strpath.size() + 1);
+    DeleteFileA(strpath.c_str());
+    CPacket pack(9, NULL, 0);
+    CSeverSocket::getInstance()->Send(pack);
+    return 0;
+}
 
 int ExcuteCommand(int nCmd)
 {
@@ -419,6 +431,9 @@ int ExcuteCommand(int nCmd)
         break;
     case 8://锁机
         iRet = UNLockMachine();
+        break;
+    case 9://删除文件
+        iRet = DeleteLocalFile();
         break;
     case 1981://连接测试
         iRet = TestConnect();
