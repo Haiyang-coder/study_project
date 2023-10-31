@@ -31,6 +31,7 @@ private:
 	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
 	CString GetPath(HTREEITEM htree);
 	void DeleteTreeChileItem(HTREEITEM htree);
+	void LoadFileInfo();
 // 实现
 protected:
 	HICON m_hIcon;
@@ -49,4 +50,8 @@ public:
 	afx_msg void OnBnClickedfile();
 	CTreeCtrl m_tree;
 	afx_msg void OnNMDblclktreedir(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnNMClicktreedir(NMHDR* pNMHDR, LRESULT* pResult);
+	// 显示文件
+	CListCtrl m_list;
+	afx_msg void OnNMRClicklistfile(NMHDR* pNMHDR, LRESULT* pResult);
 };
