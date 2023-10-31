@@ -106,6 +106,9 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, treedir, &CRemoteClientDlg::OnNMDblclktreedir)
 	ON_NOTIFY(NM_CLICK, treedir, &CRemoteClientDlg::OnNMClicktreedir)
 	ON_NOTIFY(NM_RCLICK, listFile, &CRemoteClientDlg::OnNMRClicklistfile)
+	ON_COMMAND(id_downloadfile, &CRemoteClientDlg::Ondownloadfile)
+	ON_COMMAND(id_deletefile, &CRemoteClientDlg::Ondeletefile)
+	ON_COMMAND(id_openfile, &CRemoteClientDlg::Onopenfile)
 END_MESSAGE_MAP()
 
 
@@ -375,4 +378,79 @@ void CRemoteClientDlg::OnNMRClicklistfile(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		pPupup->TrackPopupMenu(TPM_RIGHTBUTTON | TPM_LEFTALIGN,ptMouse.x,ptMouse.y,this);
 	}
+}
+
+
+void CRemoteClientDlg::Ondownloadfile()
+{
+
+	//获取文件名
+	int nListSelected = m_list.GetSelectionMark();
+	CString strFile = m_list.GetItemText(nListSelected, 0);
+	//用户指定详细的文件存储信息
+	CFileDialog filedlg(FALSE, "*", m_list.GetItemText(nListSelected, 0), OFN_OVERWRITEPROMPT, NULL, this);
+	if (filedlg.DoModal() != IDOK)//模态
+	{
+		return;
+	}
+	FILE* pfile = fopen(filedlg.GetPathName(), "wb+");
+	if (pfile == NULL)
+	{
+		AfxMessageBox("无法打开本地指定的文件");
+		return;
+	}
+	//获取文件的绝对路径
+	HTREEITEM hseleted  = m_tree.GetSelectedItem();
+	strFile =  GetPath(hseleted) + strFile;
+	TRACE("[%s]\r\n", LPCSTR(strFile));
+	//发送下载命令
+	//这里服务端会回两个数据包，一个是数据大小，一个是数据内容
+	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	if (ret < 0)
+	{
+		AfxMessageBox("执行下载命令失败了");
+		TRACE("下载失败：%d\r\n", ret);
+		return;
+	}
+	CClientSocket* pClient = CClientSocket::getInstance();
+	//这是第一次传过来的数据大小
+	long long nLenth = *(long long *)pClient->Getpack().strData.c_str();
+	if (nLenth <= 0)
+	{
+		AfxMessageBox("文件长度为0，或无法读取文件");
+		return ;
+	}
+	
+	long long nCount = 0;
+	while (nCount < nLenth)
+	{
+		//开始接收服务端发过来的文件信息
+		ret = pClient->DealCommand();
+		if (ret < 0)
+		{
+			AfxMessageBox("文件传输失败，请重试");
+			TRACE("文件传输失败：%d\r\n", ret);
+			break;
+		}
+		fwrite(pClient->Getpack().strData.c_str(), 1, pClient->Getpack().strData.size(), pfile);
+		nCount += pClient->Getpack().strData.size();
+
+	}
+	fclose(pfile);
+	pClient->closeSocket();
+	
+
+	
+}
+
+
+void CRemoteClientDlg::Ondeletefile()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CRemoteClientDlg::Onopenfile()
+{
+	// TODO: 在此添加命令处理程序代码
 }

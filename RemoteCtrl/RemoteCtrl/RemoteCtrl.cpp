@@ -141,10 +141,12 @@ int DownLoadFile()
         fseek(pFile, 0, SEEK_END);
         data = _ftelli64(pFile);
         CPacket head(4, (BYTE*)&data, 8);
+        CSeverSocket::getInstance()->Send(head);
         fseek(pFile, 0, SEEK_SET);
         char buffer[1024];
         size_t rlen = 0;
         do {
+            //而后循环发送文件部分一次发送1024个字节
             rlen = fread(buffer, 1, 1024, pFile);
             CPacket pack(4, (BYTE*)buffer, rlen);
             CSeverSocket::getInstance()->Send(pack);
