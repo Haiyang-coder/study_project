@@ -3,6 +3,9 @@
 //
 
 #pragma once
+#include"StatusDlg.h"
+
+#define WM_SEND_PACKET (WM_USER + 1) //发送数据包的消息
 
 
 // CRemoteClientDlg 对话框
@@ -23,6 +26,7 @@ public:
 
 
 private:
+	void threadDownLoadFile();
 	void LoadFileCurrent();
 	// 1查看磁盘分区
 	// 2查看指定目录下的文件
@@ -42,7 +46,7 @@ private:
 // 实现
 protected:
 	HICON m_hIcon;
-
+	CStatusDlg m_dlgStatus;
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -64,4 +68,5 @@ public:
 	afx_msg void Ondownloadfile();
 	afx_msg void Ondeletefile();
 	afx_msg void Onopenfile();
+	afx_msg LRESULT OnSendPacket(WPARAM wpatam, LPARAM lParam);
 };

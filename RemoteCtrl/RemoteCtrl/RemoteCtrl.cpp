@@ -157,6 +157,7 @@ int DownLoadFile()
     CPacket pack(4, NULL, 0);
     CSeverSocket::getInstance()->Send(pack);
     fclose(pFile);
+    return 0;
 }
 
 int MouseEvent()

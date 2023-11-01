@@ -224,7 +224,7 @@ int CClientSocket::DealCommand()
 	static size_t index = 0;
 	while (true)
 	{
-		//目前没有处理粘包问题，默认每次接受只来一个数据包
+		
 		size_t len = recv(m_client_sock, buffer + index, BUFFER_SIZE - index, 0);
 		if (len <= 0 && index == 0)
 		{
@@ -232,14 +232,18 @@ int CClientSocket::DealCommand()
 		}
 		index += len;
 		len = index;
+		//无论收多少数据都丢给流水线构造
+		//流水线告诉你构造了多少字节的数据
 		CPacket packet((BYTE*)buffer, len);
 		m_packet = packet;
 		if (len > 0)
 		{
+			//根据流水线的反馈，你把缓存中已经构造完成的数据拿出缓存
 			memmove(buffer, buffer + len, BUFFER_SIZE - len);
 			index -= len;
 			return packet.sCmd;
 		}
+		//todo：出现了构造失败的情况会直接抛弃所有的缓存，这样不行吧？
 
 	}
 	return -1;
