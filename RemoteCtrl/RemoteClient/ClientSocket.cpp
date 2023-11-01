@@ -144,6 +144,7 @@ CClientSocket::CClientSocket()
 		exit(0);
 	}
 	m_buffer.resize(BUFFER_SIZE);
+	memset(m_buffer.data(), 0, BUFFER_SIZE);
 }
 
 CClientSocket::~CClientSocket()
@@ -219,20 +220,18 @@ int CClientSocket::DealCommand()
 	{
 		return -1;
 	}
-	//char buffer[1024];
 	char* buffer = m_buffer.data();
-	memset(buffer, 0, BUFFER_SIZE);
-	size_t index = 0;
+	static size_t index = 0;
 	while (true)
 	{
 		//目前没有处理粘包问题，默认每次接受只来一个数据包
 		size_t len = recv(m_client_sock, buffer + index, BUFFER_SIZE - index, 0);
-		if (len <= 0)
+		if (len <= 0 && index == 0)
 		{
 			return -1;
 		}
 		index += len;
-		//len = index;
+		len = index;
 		CPacket packet((BYTE*)buffer, len);
 		m_packet = packet;
 		if (len > 0)
