@@ -27,6 +27,7 @@ public:
 
 private:
 	void threadDownLoadFile();
+	void threadWatchData();
 	void LoadFileCurrent();
 	// 1查看磁盘分区
 	// 2查看指定目录下的文件
@@ -69,4 +70,7 @@ public:
 	afx_msg void Ondeletefile();
 	afx_msg void Onopenfile();
 	afx_msg LRESULT OnSendPacket(WPARAM wpatam, LPARAM lParam);
+private:
+	CImage m_image;//缓存
+	bool m_isFull = false;//缓存是否为慢的
 };

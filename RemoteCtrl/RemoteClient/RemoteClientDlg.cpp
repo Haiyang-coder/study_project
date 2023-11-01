@@ -142,6 +142,40 @@ void CRemoteClientDlg::threadDownLoadFile()
 	return;
 }
 
+void CRemoteClientDlg::threadWatchData()
+{
+	CClientSocket* pclient = NULL;
+	do{
+		pclient = CClientSocket::getInstance();
+	} while (pclient == nullptr);
+	for (;;)
+	{
+		CPacket pack(6, NULL, 0);
+		bool retSend = pclient->Send(pack);
+		if (retSend)
+		{
+			int cmd = pclient->DealCommand();
+			if (cmd == 6)
+			{
+				if (m_isFull == false)
+				{
+					BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
+					// todo:拿到数据后要将数据存入缓存中
+					m_isFull = true;
+				}
+				
+				
+			}
+		}
+		else
+		{
+			Sleep(10);
+		}
+
+		
+	}
+}
+
 void CRemoteClientDlg::LoadFileCurrent()
 {
 	auto htree = m_tree.GetSelectedItem();
