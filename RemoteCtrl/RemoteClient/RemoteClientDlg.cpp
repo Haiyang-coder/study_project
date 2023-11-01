@@ -161,7 +161,16 @@ void CRemoteClientDlg::threadWatchData()
 				{
 					BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
 					// todo:拿到数据后要将数据存入缓存中
-					m_isFull = true;
+					HGLOBAL hmem = GlobalAlloc(GMEM_MOVEABLE, 0);
+					IStream* pstream = NULL;
+					HRESULT hRet =  CreateStreamOnHGlobal(hmem, TRUE, &pstream);
+					if (hRet == S_OK)
+					{
+						//pstream->Write()
+						//CreateStreamOnHGlobal();
+						m_isFull = true;
+					}
+					
 				}
 				
 				
