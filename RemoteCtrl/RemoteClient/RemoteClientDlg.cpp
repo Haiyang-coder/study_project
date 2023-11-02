@@ -9,6 +9,7 @@
 #include "afxdialogex.h"
 #include"ClientSocket.h"
 #include<thread>
+#include"WatchDialog.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -160,14 +161,23 @@ void CRemoteClientDlg::threadWatchData()
 				if (m_isFull == false)
 				{
 					BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
-					// todo:拿到数据后要将数据存入缓存中
+					//:拿到数据后要将数据存入缓存中
 					HGLOBAL hmem = GlobalAlloc(GMEM_MOVEABLE, 0);
+					if (hmem == NULL)
+					{
+						TRACE("内存不足，无法申请足够的空间");
+						Sleep(10);
+						continue;
+					}
 					IStream* pstream = NULL;
 					HRESULT hRet =  CreateStreamOnHGlobal(hmem, TRUE, &pstream);
 					if (hRet == S_OK)
 					{
-						//pstream->Write()
-						//CreateStreamOnHGlobal();
+						ULONG length = 0;
+						pstream->Write(pdata, pclient->Getpack().strData.size(), &length);
+						LARGE_INTEGER bg = { 0 };
+						pstream->Seek(bg, STREAM_SEEK_SET, NULL);
+						m_image.Load(pstream);
 						m_isFull = true;
 					}
 					
@@ -259,10 +269,22 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_COMMAND(id_deletefile, &CRemoteClientDlg::Ondeletefile)
 	ON_COMMAND(id_openfile, &CRemoteClientDlg::Onopenfile)
 	ON_MESSAGE(WM_SEND_PACKET, &CRemoteClientDlg::OnSendPacket)
+	ON_BN_CLICKED(button_startwatch, &CRemoteClientDlg::OnBnClickedstartwatch)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
 // CRemoteClientDlg 消息处理程序
+
+bool CRemoteClientDlg::GetIsFull() const
+{
+	return m_isFull;
+}
+
+CImage& CRemoteClientDlg::getImage()
+{
+	return m_image;
+}
 
 BOOL CRemoteClientDlg::OnInitDialog()
 {
@@ -590,4 +612,23 @@ LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 	CString strFile = (LPCSTR)lParam;
 	int ret = SendCommandPacket(wpatam >> 1, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 	return ret ;
+}
+
+
+
+
+void CRemoteClientDlg::OnBnClickedstartwatch()
+{
+	std::thread threadWatch(&CRemoteClientDlg::threadWatchData, this);
+	threadWatch.detach();
+	CWatchDialog dlg(this);
+	dlg.DoModal();
+}
+
+
+void CRemoteClientDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CDialogEx::OnTimer(nIDEvent);
 }

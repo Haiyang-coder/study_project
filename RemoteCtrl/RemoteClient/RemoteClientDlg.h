@@ -48,6 +48,7 @@ private:
 protected:
 	HICON m_hIcon;
 	CStatusDlg m_dlgStatus;
+	
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -55,9 +56,15 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+
+
+	bool GetIsFull() const;
+	CImage& getImage();
+
 	afx_msg void OnBnClickedtest();
 	DWORD m_serv_ip;
 	CString m_serv_port;
+	
 	afx_msg void OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBnClickedfile();
 	CTreeCtrl m_tree;
@@ -73,4 +80,9 @@ public:
 private:
 	CImage m_image;//缓存
 	bool m_isFull = false;//缓存是否为慢的
+	
+public:
+	afx_msg void OnBnClickedButton1();
+	afx_msg void OnBnClickedstartwatch();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
