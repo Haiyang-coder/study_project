@@ -153,18 +153,12 @@ void CRemoteClientDlg::threadWatchData()
 	
 	for (;;)
 	{
-		if (m_isFull == true)
+		if (m_isFull == false)
 		{
-			Sleep(10);
-		}
-		CPacket pack(6, NULL, 0);
-		//bool retSend = pclient->Send(pack);
-		int ret = SendMessage(WM_SEND_PACKET, 6 << 1 | 1);
-		if (ret > 0)
-		{
-			//int cmd = pclient->DealCommand();
-			//if (cmd == 6)
-			if (m_isFull == false)
+			CPacket pack(6, NULL, 0);
+			//bool retSend = pclient->Send(pack);
+			int ret = SendMessage(WM_SEND_PACKET, 6 << 1 | 1);
+			if (ret > 0)
 			{
 				BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
 				//:拿到数据后要将数据存入缓存中
@@ -186,14 +180,17 @@ void CRemoteClientDlg::threadWatchData()
 					m_image.Load(pstream);
 					m_isFull = true;
 				}
-					
+
 			}
-				
+			else
+			{
+				Sleep(10);
+			}
 		}
-		else
-		{
+		else {
 			Sleep(10);
 		}
+	
 
 		
 	}
