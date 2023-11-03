@@ -25,6 +25,7 @@ CWatchDialog::~CWatchDialog()
 void CWatchDialog::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, idc_watch, m_picture);
 }
 
 
@@ -46,6 +47,8 @@ BOOL CWatchDialog::OnInitDialog()
 }
 
 
+
+//timer计时器定时刷新显示区域，这里有线程冲突问题
 void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
@@ -54,7 +57,17 @@ void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 		CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
 		if (pParent->GetIsFull())
 		{
+			CRect rect;
+			m_picture.GetWindowRect(rect);
+			//将缓存的图像显示在页面
+			//pParent->getImage().BitBlt(GetDC()->GetSafeHdc(), 0, 0,  SRCCOPY);
+			pParent->getImage().StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
+				.Width(), rect.Height(), SRCCOPY);
+			//要对画面进行适配
 
+			m_picture.InvalidateRect(NULL);
+			pParent->getImage().Destroy();
+			pParent->SetImageStatus();
 		}
 	}
 	CDialog::OnTimer(nIDEvent);

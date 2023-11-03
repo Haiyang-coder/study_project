@@ -60,6 +60,7 @@ public:
 
 	bool GetIsFull() const;
 	CImage& getImage();
+	void SetImageStatus(bool isFull = false);
 
 	afx_msg void OnBnClickedtest();
 	DWORD m_serv_ip;

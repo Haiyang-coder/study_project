@@ -145,46 +145,50 @@ void CRemoteClientDlg::threadDownLoadFile()
 
 void CRemoteClientDlg::threadWatchData()
 {
+	Sleep(50);
 	CClientSocket* pclient = NULL;
 	do{
 		pclient = CClientSocket::getInstance();
 	} while (pclient == nullptr);
+	
 	for (;;)
 	{
-		CPacket pack(6, NULL, 0);
-		bool retSend = pclient->Send(pack);
-		if (retSend)
+		if (m_isFull == true)
 		{
-			int cmd = pclient->DealCommand();
-			if (cmd == 6)
+			Sleep(10);
+		}
+		CPacket pack(6, NULL, 0);
+		//bool retSend = pclient->Send(pack);
+		int ret = SendMessage(WM_SEND_PACKET, 6 << 1 | 1);
+		if (ret > 0)
+		{
+			//int cmd = pclient->DealCommand();
+			//if (cmd == 6)
+			if (m_isFull == false)
 			{
-				if (m_isFull == false)
+				BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
+				//:拿到数据后要将数据存入缓存中
+				HGLOBAL hmem = GlobalAlloc(GMEM_MOVEABLE, 0);
+				if (hmem == NULL)
 				{
-					BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
-					//:拿到数据后要将数据存入缓存中
-					HGLOBAL hmem = GlobalAlloc(GMEM_MOVEABLE, 0);
-					if (hmem == NULL)
-					{
-						TRACE("内存不足，无法申请足够的空间");
-						Sleep(10);
-						continue;
-					}
-					IStream* pstream = NULL;
-					HRESULT hRet =  CreateStreamOnHGlobal(hmem, TRUE, &pstream);
-					if (hRet == S_OK)
-					{
-						ULONG length = 0;
-						pstream->Write(pdata, pclient->Getpack().strData.size(), &length);
-						LARGE_INTEGER bg = { 0 };
-						pstream->Seek(bg, STREAM_SEEK_SET, NULL);
-						m_image.Load(pstream);
-						m_isFull = true;
-					}
-					
+					TRACE("内存不足，无法申请足够的空间");
+					Sleep(10);
+					continue;
 				}
-				
-				
+				IStream* pstream = NULL;
+				HRESULT hRet = CreateStreamOnHGlobal(hmem, TRUE, &pstream);
+				if (hRet == S_OK)
+				{
+					ULONG length = 0;
+					pstream->Write(pdata, pclient->Getpack().strData.size(), &length);
+					LARGE_INTEGER bg = { 0 };
+					pstream->Seek(bg, STREAM_SEEK_SET, NULL);
+					m_image.Load(pstream);
+					m_isFull = true;
+				}
+					
 			}
+				
 		}
 		else
 		{
@@ -284,6 +288,11 @@ bool CRemoteClientDlg::GetIsFull() const
 CImage& CRemoteClientDlg::getImage()
 {
 	return m_image;
+}
+
+void CRemoteClientDlg::SetImageStatus(bool isFull)
+{
+	m_isFull = isFull;
 }
 
 BOOL CRemoteClientDlg::OnInitDialog()
@@ -609,8 +618,29 @@ void CRemoteClientDlg::Onopenfile()
 
 LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 {
-	CString strFile = (LPCSTR)lParam;
-	int ret = SendCommandPacket(wpatam >> 1, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	int cmd = wpatam >> 1;
+	int ret = 0;
+	switch (cmd)
+	{
+	case 4:
+		{
+			CString strFile = (LPCSTR)lParam;
+			ret = SendCommandPacket(wpatam >> 1, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+		}
+		
+		break;
+	case 6:
+		{
+			ret = SendCommandPacket(cmd, wpatam & 1);
+		}
+			
+		break;
+	default:
+		ret = -1;
+		break;
+	}
+
+
 	return ret ;
 }
 
@@ -619,10 +649,12 @@ LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 
 void CRemoteClientDlg::OnBnClickedstartwatch()
 {
+	CWatchDialog dlg(this);
+	
 	std::thread threadWatch(&CRemoteClientDlg::threadWatchData, this);
 	threadWatch.detach();
-	CWatchDialog dlg(this);
 	dlg.DoModal();
+
 }
 
 

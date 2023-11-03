@@ -4,7 +4,7 @@
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 409600
 CPacket::CPacket()
 {
 }
