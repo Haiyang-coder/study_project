@@ -145,7 +145,6 @@ void CRemoteClientDlg::threadDownLoadFile()
 
 void CRemoteClientDlg::threadWatchData()
 {
-	Sleep(50);
 	CClientSocket* pclient = NULL;
 	do{
 		pclient = CClientSocket::getInstance();
@@ -188,7 +187,7 @@ void CRemoteClientDlg::threadWatchData()
 			}
 		}
 		else {
-			Sleep(10);
+			Sleep(1);
 		}
 	
 
@@ -622,9 +621,12 @@ LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 	case 4:
 		{
 			CString strFile = (LPCSTR)lParam;
-			ret = SendCommandPacket(wpatam >> 1, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+			ret = SendCommandPacket(cmd, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 		}
-		
+	case 5://鼠标操作
+	{
+		ret = SendCommandPacket(cmd, wpatam & 1, (BYTE*)lParam, sizeof(MOUSEEV));
+	}
 		break;
 	case 6:
 		{

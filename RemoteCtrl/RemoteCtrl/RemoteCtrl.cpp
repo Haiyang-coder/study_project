@@ -205,7 +205,7 @@ int MouseEvent()
 
             break;
         }
-
+        TRACE("mouse event : %08X x %d y %d\r\n", nFlags, mouse.ptXY.x, mouse.ptXY.y);
         switch (nFlags)
         {
         case 0x11://左键单击
