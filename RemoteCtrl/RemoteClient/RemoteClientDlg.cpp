@@ -150,7 +150,7 @@ void CRemoteClientDlg::threadWatchData()
 		pclient = CClientSocket::getInstance();
 	} while (pclient == nullptr);
 	
-	for (;;)
+	while (m_hWnd != nullptr)
 	{
 		if (m_isFull == false)
 		{
@@ -320,7 +320,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	UpdateData();
-	m_serv_ip = 0x7f000001;
+	m_serv_ip = 0xAFB28315;
 	m_serv_port = _T("9527");
 	UpdateData(false);
 	m_dlgStatus.Create(dlg_status,this);
