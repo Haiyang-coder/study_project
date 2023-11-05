@@ -17,6 +17,9 @@ public:
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = dlg_watch };
 #endif
+public:
+	int m_iObjWidth = -1;
+	int m_iObhHeight = -1;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
@@ -35,4 +38,5 @@ public:
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnStnClickedwatch();
+	afx_msg void OnClose();
 };

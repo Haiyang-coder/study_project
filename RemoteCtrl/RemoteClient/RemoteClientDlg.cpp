@@ -150,12 +150,11 @@ void CRemoteClientDlg::threadWatchData()
 		pclient = CClientSocket::getInstance();
 	} while (pclient == nullptr);
 	
-	while (m_hWnd != nullptr)
+	while (m_isCLosed)
 	{
 		if (m_isFull == false)
 		{
 			CPacket pack(6, NULL, 0);
-			//bool retSend = pclient->Send(pack);
 			int ret = SendMessage(WM_SEND_PACKET, 6 << 1 | 1);
 			if (ret > 0)
 			{
@@ -176,6 +175,10 @@ void CRemoteClientDlg::threadWatchData()
 					pstream->Write(pdata, pclient->Getpack().strData.size(), &length);
 					LARGE_INTEGER bg = { 0 };
 					pstream->Seek(bg, STREAM_SEEK_SET, NULL);
+					if ((HBITMAP)m_image != nullptr)
+					{
+						m_image.Destroy();
+					}
 					m_image.Load(pstream);
 					m_isFull = true;
 				}
@@ -648,8 +651,8 @@ LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 
 void CRemoteClientDlg::OnBnClickedstartwatch()
 {
+	m_isCLosed = true;
 	CWatchDialog dlg(this);
-	
 	std::thread threadWatch(&CRemoteClientDlg::threadWatchData, this);
 	threadWatch.detach();
 	dlg.DoModal();

@@ -26,6 +26,7 @@ public:
 
 
 private:
+	
 	void threadDownLoadFile();
 	void threadWatchData();
 	void LoadFileCurrent();
@@ -46,6 +47,7 @@ private:
 	void LoadFileInfo();
 // 实现
 protected:
+	
 	HICON m_hIcon;
 	CStatusDlg m_dlgStatus;
 	
@@ -57,7 +59,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 
-
+	bool m_isCLosed = true;//这是远程监控显示界面
 	bool GetIsFull() const;
 	CImage& getImage();
 	void SetImageStatus(bool isFull = false);

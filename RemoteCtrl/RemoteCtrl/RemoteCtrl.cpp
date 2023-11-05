@@ -288,7 +288,7 @@ int SendScreen()
     int nWidth = GetDeviceCaps(hScreen, HORZRES);
     int nHeight = GetDeviceCaps(hScreen, VERTRES);
     screen.Create(nWidth, nHeight, nBitPerPixel);
-    BitBlt(screen.GetDC(), 0, 0, 1920, 1020, hScreen, 0, 0, SRCCOPY);
+    BitBlt(screen.GetDC(), 0, 0, nWidth, nHeight, hScreen, 0, 0, SRCCOPY);
     ReleaseDC(NULL, hScreen);
    
     //创建了一个全局的内存块
