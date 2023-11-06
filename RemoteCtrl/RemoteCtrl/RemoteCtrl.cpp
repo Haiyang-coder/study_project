@@ -329,10 +329,24 @@ unsigned  threadLockDlg(void* arg)
     dlg.ShowWindow(SW_SHOW);
     //让窗口铺满屏幕
     CRect rect;
-    //rect.left = 0;
-    //rect.top = 0;
-    //rect.right = GetSystemMetrics(SM_CXFULLSCREEN);
-    //rect.bottom = GetSystemMetrics(SM_CYFULLSCREEN) - 50;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = GetSystemMetrics(SM_CXFULLSCREEN);
+    rect.bottom = GetSystemMetrics(SM_CYFULLSCREEN);
+    rect.bottom = LONG(rect.bottom * 1.10);
+    dlg.MoveWindow(rect);
+    CWnd* ptext = dlg.GetDlgItem(IDC_STATIC);
+    if (ptext)
+    {
+        CRect rtText;
+        ptext->GetWindowRect(rtText);
+        int width = rtText.Width();
+        int height = rtText.Height();
+        int x = (rect.right - width) / 2;
+        int y = (rect.bottom - height) / 2;
+        ptext->MoveWindow(x, y, rtText.Width(), rtText.Height());
+
+    }
     //窗口置顶
     dlg.SetWindowPos(&dlg.wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
     //限制鼠标的功能
@@ -340,11 +354,15 @@ unsigned  threadLockDlg(void* arg)
 
     //限制鼠标活动范围
     dlg.GetWindowRect(&rect);
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = 1;
+    rect.bottom = 1;
     ClipCursor(rect);
     //隐藏任务栏
     ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_HIDE);
-    MSG msg;
     //这里的GetMessage，消息甭。20ms一次。是和线程绑定的，只能拿到这个线程内的消息
+    MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
@@ -356,7 +374,10 @@ unsigned  threadLockDlg(void* arg)
             break;
         }
     }
+    //恢复鼠标操作
+    ClipCursor(NULL);
     ShowCursor(true);
+    //恢复任务栏操作
     ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_SHOW);
     dlg.DestroyWindow();
     _endthreadex(0);
@@ -380,7 +401,7 @@ int UNLockMachine()
 {
     //::SendMessage(dlg.m_hWnd,WM_KEYDOWN, 0x1b, 0x01E001);
     PostThreadMessage(threadid ,WM_KEYDOWN, 0x1b, 0x01E001);
-    CPacket pack(7, NULL, 0);
+    CPacket pack(8, NULL, 0);
     CSeverSocket::getInstance()->Send(pack);
     return 0;
 }

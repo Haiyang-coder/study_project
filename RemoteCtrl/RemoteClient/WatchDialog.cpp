@@ -41,6 +41,8 @@ BEGIN_MESSAGE_MAP(CWatchDialog, CDialog)
 	ON_WM_MOUSEMOVE()
 	ON_STN_CLICKED(idc_watch, &CWatchDialog::OnStnClickedwatch)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_BUTTON1, &CWatchDialog::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_BUTTON2, &CWatchDialog::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
 
@@ -263,4 +265,21 @@ void CWatchDialog::OnClose()
 	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
 	pParent->m_isCLosed = false;
 	CDialog::OnClose();
+}
+
+
+void CWatchDialog::OnBnClickedButton1()
+{
+	// 这是锁机操作
+
+	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
+	pParent->SendMessage(WM_SEND_PACKET, 7 << 1 | 1);
+}
+
+
+void CWatchDialog::OnBnClickedButton2()
+{
+	// 这是解锁操作
+	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
+	pParent->SendMessage(WM_SEND_PACKET, 8 << 1 | 1);
 }
