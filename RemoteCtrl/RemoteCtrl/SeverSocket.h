@@ -60,6 +60,7 @@ typedef struct file_info
 
 }FILEINFO, * PFILEINFO;
 
+typedef int(* SOCKE_CALLBACK)(void* arg);
 class CSeverSocket
 {
 private: 
@@ -77,7 +78,8 @@ private:
 public:
 	static CSeverSocket* getInstance();
 	static void releaseInstance();
-	bool InitSocket();
+	bool InitSocket(short port = 9527);
+	int RunFunc(SOCKE_CALLBACK callbackFunc, void* arg, short port = 9527);
 	bool AcceptClient();
 	int DealCommand();
 	bool Send(const char* pData, size_t nize);
@@ -90,6 +92,8 @@ public:
 
 
 private:
+	SOCKE_CALLBACK m_callback;
+	void* m_arg;
 	 static CSeverSocket* m_pinstance; 
 	 class CHelper
 	 {

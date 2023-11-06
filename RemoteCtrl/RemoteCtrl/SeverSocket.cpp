@@ -163,7 +163,7 @@ BOOL CSeverSocket::InitSockEnv()
 	return TRUE;
 }
 
-bool CSeverSocket::InitSocket()
+bool CSeverSocket::InitSocket(short port = 9527)
 {
 
 	sockaddr_in serv_adr;
@@ -183,6 +183,25 @@ bool CSeverSocket::InitSocket()
 	}
 	
 	return true;
+}
+
+int CSeverSocket::RunFunc(SOCKE_CALLBACK callbackFunc, void* arg, short port)
+{
+	bool ret = InitSocket(port);
+	if(!ret)
+	{
+		return -1;
+	}
+	while (true)
+	{
+		if (AcceptClient() == false)
+		{
+
+		}
+	}
+	m_callback = callbackFunc;
+	m_arg = arg;
+	return 0;
 }
 
 bool CSeverSocket::AcceptClient()
