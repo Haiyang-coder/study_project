@@ -33,7 +33,7 @@ CCommand::~CCommand()
 {
 }
 
-int CCommand::ExcuteCommand(int nCmd)
+int CCommand::ExcuteCommand(int nCmd, std::list<CPacket>& lspacket, CPacket& packetIn)
 {
 	std::map<int, CMDFUNC>::iterator itor = m_mapFuntion.find(nCmd);
 	if (itor == m_mapFuntion.end())
@@ -41,10 +41,29 @@ int CCommand::ExcuteCommand(int nCmd)
 		return -1; 
 	}
 	
-	return (this->*itor->second)();
+	return (this->*itor->second)(lspacket, packetIn);
 }
 
-int CCommand::LockMachine()
+void CCommand::RunCommand(void* arg, int status, std::list<CPacket>& lstPacket, CPacket& packetIn)
+{
+    CCommand* thiz = (CCommand*)arg;
+    if (status > 0)
+    {
+        int ret = thiz->ExcuteCommand(status, lstPacket, packetIn);
+        if (!ret)
+        {
+            TRACE("执行命令失败：%d ret = %d \r\n", status, ret);
+        }
+    }
+    else
+    {
+        MessageBox(NULL, _T("如法正常接入用户"), _T("接入用户失败"), MB_OK | MB_ICONERROR);
+        exit(0);
+    }
+    
+}
+
+int CCommand::LockMachine(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
 	//判断是否已经锁机了
 	if ((dlg.m_hWnd == NULL) || (dlg.m_hWnd == INVALID_HANDLE_VALUE))
@@ -52,60 +71,61 @@ int CCommand::LockMachine()
 		//_beginthread(threadLockDlg, 0, NULL);
 		_beginthreadex(NULL, 0, &CCommand::threadLockDlg, this, 0, &threadid);
 	}
-	CPacket pack(7, NULL, 0);
-	CSeverSocket::getInstance()->Send(pack);
+	
+    lspacket.push_back(CPacket(7, NULL, 0));
 
 	return 0;
 }
 
-int  CCommand::UNLockMachine()
+int  CCommand::UNLockMachine(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
 	//::SendMessage(dlg.m_hWnd,WM_KEYDOWN, 0x1b, 0x01E001);
 	PostThreadMessage(threadid, WM_KEYDOWN, 0x1b, 0x01E001);
-	CPacket pack(8, NULL, 0);
-	CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(8, NULL, 0));
 	return 0;
 }
 
-int  CCommand::TestConnect()
+int  CCommand::TestConnect(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
-	CPacket pack(1981, NULL, 0);
-	CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(1981, NULL, 0));
 	return 0;
 }
 
-int  CCommand::DeleteLocalFile()
+int  CCommand::DeleteLocalFile(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
-	std::string strpath = "";
-	CSeverSocket::getInstance()->GetFilePath(strpath);
+	std::string strpath = packetIn.strData;
+
 	//进行一个字符集的转变
 	//TCHAR sPath[MAX_PATH];
 	//mbstowcs(sPath, strpath.c_str(), strpath.size() + 1);
 	DeleteFileA(strpath.c_str());
-	CPacket pack(9, NULL, 0);
-	CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(9, NULL, 0));
+
 	return 0;
 }
 
 
 
 
-int CCommand::MakeDirectoryInfo()
+int CCommand::MakeDirectoryInfo(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
     std::string strPath;//指定的路径
     std::list<FILEINFO> listFIleInfos;//路径下面的文件列表
-    if (CSeverSocket::getInstance()->GetFilePath(strPath) == false)
+    if (packetIn.sCmd != 2 &&
+        packetIn.sCmd != 3 &&
+        packetIn.sCmd != 4 &&
+        packetIn.sCmd != 9)
     {
         OutputDebugStringA("当前命令不是获取文件列表的命令");
         return -1;
     }
+    strPath = packetIn.strData;
     if (_chdir(strPath.c_str()) != 0)
     {
         FILEINFO finfo1;
         finfo1.HaveNext = FALSE;
         listFIleInfos.push_back(finfo1);
-        CPacket pack(2, (BYTE*)&finfo1, sizeof(finfo1));
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(2, (BYTE*)&finfo1, sizeof(finfo1)));
         OutputDebugStringA("没有权限访问目录");
         return -2;
     }
@@ -118,8 +138,7 @@ int CCommand::MakeDirectoryInfo()
         OutputDebugStringA("没有找到任何文件");
         FILEINFO finfo2;
         finfo2.HaveNext = FALSE;
-        CPacket pack(2, (BYTE*)&finfo2, sizeof(finfo2));
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(2, (BYTE*)&finfo2, sizeof(finfo2)));
         return -3;
     }
 
@@ -129,31 +148,26 @@ int CCommand::MakeDirectoryInfo()
         finfo3.ISDirectory = (fdata.attrib & _A_SUBDIR) != 0;
         memcpy(finfo3.szFileName, fdata.name, strlen(fdata.name));
         TRACE("%s\r\n", finfo3.szFileName);
-        CPacket pack(2, (BYTE*)&finfo3, sizeof(finfo3));
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(2, (BYTE*)&finfo3, sizeof(finfo3)));
     } while (!_findnext(hfind, &fdata));
 
     FILEINFO finfo;
     finfo.HaveNext = FALSE;
-    CPacket pack(2, (BYTE*)&finfo, sizeof(finfo));
-    CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(2, (BYTE*)&finfo, sizeof(finfo)));
     return 0;
 }
 
-int CCommand::RunFile()
+int CCommand::RunFile(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
-    std::string strPath = "";
-    CSeverSocket::getInstance()->GetFilePath(strPath);
+    std::string strPath = packetIn.strData;
     ShellExecuteA(NULL, NULL, strPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-    CPacket pack(3, NULL, 0);
-    CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(3, NULL, 0));
     return 0;
 }
 
-int CCommand::DownLoadFile()
+int CCommand::DownLoadFile(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
-    std::string strPath = "";
-    CSeverSocket::getInstance()->GetFilePath(strPath);
+    std::string strPath = packetIn.strData;
     long long data = 0;
     FILE* pFile = NULL;
     //这里用fopen_s是安全打开方式，因为fopen有可能出现
@@ -161,8 +175,7 @@ int CCommand::DownLoadFile()
     errno_t err = fopen_s(&pFile, strPath.c_str(), "rb");
     if (err != 0)
     {
-        CPacket pack(4, (BYTE*)&data, 8);
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(4, (BYTE*)&data, 8));
         return -1;
     }
     if (pFile != NULL)
@@ -170,30 +183,28 @@ int CCommand::DownLoadFile()
         //先发给用户这个文件有多大
         fseek(pFile, 0, SEEK_END);
         data = _ftelli64(pFile);
-        CPacket head(4, (BYTE*)&data, 8);
-        CSeverSocket::getInstance()->Send(head);
+        lspacket.push_back(CPacket(4, (BYTE*)&data, 8));
         fseek(pFile, 0, SEEK_SET);
         char buffer[1024];
         size_t rlen = 0;
         do {
             //而后循环发送文件部分一次发送1024个字节
             rlen = fread(buffer, 1, 1024, pFile);
-            CPacket pack(4, (BYTE*)buffer, rlen);
-            CSeverSocket::getInstance()->Send(pack);
+            lspacket.push_back(CPacket(4, (BYTE*)buffer, rlen));
         } while (rlen >= 1024);
 
     }
-    CPacket pack(4, NULL, 0);
-    CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(4, NULL, 0));
     fclose(pFile);
     return 0;
 }
 
-int CCommand::MouseEvent()
+int CCommand::MouseEvent(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
     MOUSEEV mouse;
-    if (CSeverSocket::getInstance()->GetMouseEvent(mouse))
+    if (packetIn.sCmd == 5)
     {
+        memcpy(&mouse, packetIn.strData.c_str(), sizeof(MOUSEEV));
         //先设置了鼠标的坐标信息
         SetCursorPos(mouse.ptXY.x, mouse.ptXY.y);
         DWORD nFlags = 0;
@@ -292,8 +303,7 @@ int CCommand::MouseEvent()
         default:
             break;
         }
-        CPacket pack(4, NULL, 0);
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(4, NULL, 0));
 
 
     }
@@ -306,7 +316,7 @@ int CCommand::MouseEvent()
 }
 
 
-int CCommand::SendScreen()
+int CCommand::SendScreen(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
     CImage screen;//GDI
     //获取当前设备上下文
@@ -333,8 +343,7 @@ int CCommand::SendScreen()
         //获取内存指针并且上锁
         PBYTE pData = (PBYTE)GlobalLock(hMem);
         SIZE_T nSize = GlobalSize(hMem);
-        CPacket pack(6, pData, nSize);
-        CSeverSocket::getInstance()->Send(pack);
+        lspacket.push_back(CPacket(6, pData, nSize));
         GlobalUnlock(hMem);
 
 
@@ -345,7 +354,7 @@ int CCommand::SendScreen()
     return 0;
 }
 
-int CCommand::MakeDriverInfo()
+int CCommand::MakeDriverInfo(std::list<CPacket>& lspacket, CPacket& packetIn)
 {
     std::string result = "";
     for (int i = 1; i <= 26; i++)
@@ -358,9 +367,7 @@ int CCommand::MakeDriverInfo()
         }
     }
     result += ',';
-    CPacket pack(1, (BYTE*)result.c_str(), result.size());
-    CRemteServerTool::Dump((BYTE*)pack.Data(), pack.Size());
-    CSeverSocket::getInstance()->Send(pack);
+    lspacket.push_back(CPacket(1, (BYTE*)result.c_str(), result.size()));
     return 0;
 }
 

@@ -44,48 +44,21 @@ int main()
             // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
             CCommand command;
             CSeverSocket* pserver = CSeverSocket::getInstance();
-            int ret = pserver->RunFunc(NULL,&command);
+            int ret = pserver->RunFunc(&CCommand::RunCommand, &command);
             switch (ret)
             {
             case -1:
                 MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
                 exit(0);
                 break;
+            case -2:
+                MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
+                exit(0);
+                break;
             default:
                 break;
             }
-            int count = 0;
-            if (pserver->InitSocket() == false)
-            {
-               
-            }
-            while (pserver != nullptr)
-            {
-                if (pserver->AcceptClient() == false)
-                {
-                    MessageBox(NULL, _T("Accept error"), _T("Accept failed"), MB_OK | MB_ICONERROR);
-                    if (count >= 3)
-                    {
 
-                        MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
-                        exit(0);
-                    }
-                    count++;
-                }
-                int iRet = pserver->DealCommand();
-                if (iRet > 0)
-                {
-                    iRet = command.ExcuteCommand(pserver->Getpack().sCmd);
-                    if (iRet != 0)
-                    {
-                        TRACE("执行命令失败：%d ret = %d \r\n", pserver->Getpack().sCmd, iRet);
-                    }
-                    pserver->CloseSocket();
-                }
-
-            }
-           
-           
         }
     }
     else
