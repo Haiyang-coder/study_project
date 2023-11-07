@@ -323,7 +323,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	UpdateData();
-	m_serv_ip = 0xAFB28315;
+	m_serv_ip = 0xAFB28315;//0xAFB28315 //0x7F0000010
 	m_serv_port = _T("9527");
 	UpdateData(false);
 	m_dlgStatus.Create(dlg_status,this);
@@ -427,6 +427,13 @@ void CRemoteClientDlg::OnBnClickedfile()
 			continue;
 		}
 		dr += drivers[i];
+	}
+	if (drivers.size() > 0)
+	{
+		dr += ':';
+		auto hitem = m_tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
+		m_tree.InsertItem(NULL, hitem, TVI_LAST);
+		dr.clear();
 	}
 }
 
@@ -626,6 +633,7 @@ LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
 			CString strFile = (LPCSTR)lParam;
 			ret = SendCommandPacket(cmd, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 		}
+		break;
 	case 5://鼠标操作
 	{
 		ret = SendCommandPacket(cmd, wpatam & 1, (BYTE*)lParam, sizeof(MOUSEEV));

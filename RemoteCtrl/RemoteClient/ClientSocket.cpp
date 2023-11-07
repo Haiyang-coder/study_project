@@ -226,7 +226,7 @@ int CClientSocket::DealCommand()
 	{
 		
 		size_t len = recv(m_client_sock, buffer + index, BUFFER_SIZE - index, 0);
-		if (len <= 0 && index == 0)
+		if ((len <= 0) && (index <= 0))
 		{
 			return -1;
 		}
@@ -239,7 +239,7 @@ int CClientSocket::DealCommand()
 		if (len > 0)
 		{
 			//根据流水线的反馈，你把缓存中已经构造完成的数据拿出缓存
-			memmove(buffer, buffer + len, BUFFER_SIZE - len);
+			memmove(buffer, buffer + len, index - len);
 			index -= len;
 			return packet.sCmd;
 		}

@@ -88,7 +88,7 @@ int CSeverSocket::RunFunc(SOCKE_CALLBACK callbackFunc, void* arg, short port)
 		if (ret > 0)
 		{
 			m_callback(m_arg, ret, listPacket, m_packet);
-			if (listPacket.size() > 0)
+			while (listPacket.size() > 0)
 			{
 				Send(listPacket.front());
 				listPacket.pop_front();
@@ -198,34 +198,6 @@ bool CSeverSocket::Send(CPacket& pack)
 	return end;
 }
 
-bool CSeverSocket::GetFilePath(std::string& strPath)
-{
-	if (m_packet.sCmd == 2 ||
-		m_packet.sCmd == 3 ||
-		m_packet.sCmd == 4 ||
-		m_packet.sCmd == 9)
-
-	{
-		strPath = m_packet.strData;
-		return true;
-	}
-	return false;
-}
-
-bool CSeverSocket::GetMouseEvent(MOUSEEV& mouse)
-{
-	if (m_packet.sCmd == 5)
-	{
-		memcpy(&mouse, m_packet.strData.c_str(), sizeof(MOUSEEV));
-		return true;
-	}
-	return false;
-}
-
-const CPacket& CSeverSocket::Getpack()
-{
-	return m_packet;
-}
 
 void CSeverSocket::CloseSocket()
 {

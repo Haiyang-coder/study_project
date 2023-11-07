@@ -62,9 +62,6 @@ protected:
 	int DealCommand();
 	bool Send(const char* pData, size_t nize);
 	bool Send(CPacket& pack);
-	bool GetFilePath(std::string& strPath);
-	bool GetMouseEvent(MOUSEEV& mouse);
-	const CPacket& Getpack();
 	void CloseSocket();
 	
 

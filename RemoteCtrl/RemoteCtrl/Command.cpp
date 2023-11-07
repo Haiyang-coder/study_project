@@ -50,7 +50,7 @@ void CCommand::RunCommand(void* arg, int status, std::list<CPacket>& lstPacket, 
     if (status > 0)
     {
         int ret = thiz->ExcuteCommand(status, lstPacket, packetIn);
-        if (!ret)
+        if (ret < 0)
         {
             TRACE("Ö´ÐÐÃüÁîÊ§°Ü£º%d ret = %d \r\n", status, ret);
         }
@@ -194,7 +194,10 @@ int CCommand::DownLoadFile(std::list<CPacket>& lspacket, CPacket& packetIn)
         } while (rlen >= 1024);
 
     }
-    lspacket.push_back(CPacket(4, NULL, 0));
+    else {
+        lspacket.push_back(CPacket(4, NULL, 0));
+    }
+   
     fclose(pFile);
     return 0;
 }
@@ -366,7 +369,6 @@ int CCommand::MakeDriverInfo(std::list<CPacket>& lspacket, CPacket& packetIn)
             result += 'A' + i - 1;
         }
     }
-    result += ',';
     lspacket.push_back(CPacket(1, (BYTE*)result.c_str(), result.size()));
     return 0;
 }
