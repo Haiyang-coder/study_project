@@ -5,6 +5,8 @@
 #pragma once
 #include"StatusDlg.h"
 
+
+
 #define WM_SEND_PACKET (WM_USER + 1) //发送数据包的消息
 
 
@@ -30,18 +32,6 @@ private:
 	void threadDownLoadFile();
 	void threadWatchData();
 	void LoadFileCurrent();
-	// 1查看磁盘分区
-	// 2查看指定目录下的文件
-	// 3打开文件
-	// 4下载文件
-	// 5鼠标操作
-	// 6发送屏幕内容
-	// 7锁机
-	// 8解锁
-	// 9删除文件
-	// 1981测试连接
-	//返回值是命令号，如果小于0则是错误
-	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
 	CString GetPath(HTREEITEM htree);
 	void DeleteTreeChileItem(HTREEITEM htree);
 	void LoadFileInfo();
@@ -88,4 +78,6 @@ public:
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedstartwatch();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	void OnIpnFieldchangedip(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnEnChangeport();
 };

@@ -5,8 +5,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteClient.h"
-#include "RemoteClientDlg.h"
-#include"ClientController.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

@@ -18,16 +18,16 @@ public:
 	~CPacket();
 public:
 	int Size();
-	const char* const Data();
+	const char* const Data(std::string& strOut) const;
 public:
 	WORD sHead = 0;//数据头
 	DWORD nLength = 0;//数据长度（从控制命令到校验的长度）
 	WORD sCmd = 0;//控制命令
 	std::string strData = "";//数据
 	WORD sSum = 0;//校验(只校验数据部分)
-	std::string strOut;	//整個包的數據
+	//std::string strOut;	//整個包的數據
 
-private:
+
 
 };
 #pragma pack(pop)
@@ -68,7 +68,7 @@ class CClientSocket
 private:
 
 	CClientSocket();
-	CClientSocket(const CClientSocket&) {};
+	CClientSocket(const CClientSocket&);
 	~CClientSocket();
 
 	CClientSocket& operator=(const CClientSocket&) {};
@@ -80,18 +80,21 @@ private:
 public:
 	static CClientSocket* getInstance();
 	static void releaseInstance();
-	bool InitSocket(DWORD, int nPort);
+	bool InitSocket();
 	int DealCommand();
 	bool Send(const char* pData, size_t nize);
-	bool Send(CPacket& pack);
+	bool Send(const CPacket& pack);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
 	const CPacket& Getpack();
 	void closeSocket();
+	int UpdateAddress(int, int);
 
 
 
 private:
+	int m_nIp;
+	int m_nPort;
 	std::vector<char> m_buffer;
 	static CClientSocket* m_pinstance;
 	class CHelper

@@ -112,7 +112,7 @@ int CPacket::Size()
 	return nLength + 6;
 }
 
-const char* const CPacket::Data()
+const char* const CPacket::Data(std::string& strOut) const
 {
 	strOut.resize(nLength + 6);
 	BYTE* pData = (BYTE*)strOut.c_str();
@@ -124,12 +124,21 @@ const char* const CPacket::Data()
 	return strOut.c_str();
 }
 
+int CClientSocket::UpdateAddress(int nIp, int nPort)
+{
+	m_nPort = nPort;
+	m_nIp = nIp;
+	return 0;
+}
+
 
 
 //私有静态成员必须初始化 
 CClientSocket* CClientSocket::m_pinstance = nullptr;
 CClientSocket::CHelper CClientSocket::m_helper;
-CClientSocket::CClientSocket()
+CClientSocket::CClientSocket():
+	m_nIp(INADDR_ANY),
+	m_nPort(0)
 {
 	m_client_sock = INVALID_SOCKET;
 	m_pinstance = NULL;
@@ -145,6 +154,17 @@ CClientSocket::CClientSocket()
 	}
 	m_buffer.resize(BUFFER_SIZE);
 	memset(m_buffer.data(), 0, BUFFER_SIZE);
+}
+
+CClientSocket::CClientSocket(const CClientSocket& ss)
+{
+	if (&ss != this)
+	{
+		m_client_sock = ss.m_client_sock;
+		m_nIp = ss.m_nIp;
+		m_nPort = ss.m_nPort;
+	}
+	
 }
 
 CClientSocket::~CClientSocket()
@@ -165,7 +185,7 @@ BOOL CClientSocket::InitSockEnv()
 	return TRUE;
 }
 
-bool CClientSocket::InitSocket(DWORD strIPAddress, int nPort)
+bool CClientSocket::InitSocket()
 {
 	if (m_client_sock != INVALID_SOCKET)
 	{
@@ -174,14 +194,14 @@ bool CClientSocket::InitSocket(DWORD strIPAddress, int nPort)
 	m_client_sock = socket(PF_INET, SOCK_STREAM, 0);
 	sockaddr_in serv_adr;
 	memset(&serv_adr, 0, sizeof(sockaddr_in));
-	serv_adr.sin_addr.s_addr = htonl(strIPAddress);
+	serv_adr.sin_addr.s_addr = htonl(m_nIp);
 	serv_adr.sin_family = AF_INET;
 	if (serv_adr.sin_addr.s_addr == INADDR_NONE) {
 		AfxMessageBox("IP地址格式不正确");
 		perror("ip地址不对");
 		return false;
 	}
-	serv_adr.sin_port = htons(nPort);
+	serv_adr.sin_port = htons(m_nPort);
 	int ret = connect(m_client_sock, (sockaddr*)&serv_adr, sizeof(serv_adr));
 	if (ret < 0)
 	{
@@ -258,13 +278,15 @@ bool CClientSocket::Send(const char* pData, size_t nize)
 	return send(m_client_sock, pData, nize, 0) > 0;
 }
 
-bool CClientSocket::Send(CPacket& pack)
+bool CClientSocket::Send(const CPacket& pack)
 {
 	if (m_client_sock == -1)
 	{
 		return false;
 	}
-	return  send(m_client_sock, pack.Data(), pack.Size(), 0);
+	std::string strOut;
+	pack.Data(strOut);
+	return  send(m_client_sock, strOut.c_str(), strOut.length(), 0);
 }
 
 bool CClientSocket::GetFilePath(std::string& strPath)

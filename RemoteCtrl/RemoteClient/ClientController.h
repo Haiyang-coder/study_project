@@ -8,6 +8,7 @@
 #include"RemoteClientDlg.h"
 #include<map>
 #include"resource.h"
+#include"RemteClientTool.h"
 
 #define WM_SEND_PACKET (WM_USER + 1) //发送包数据
 #define WM_SEND_DATA (WM_USER + 2)	//发送数据
@@ -28,7 +29,12 @@ public:
 	int InitController();
 	//发送消息
 	LRESULT SendMessage(MSG msag);
-
+	void UpdateAddress(int ip, int port);
+	int DealCommand();
+	void closeSocket();
+	bool SendPacket(const CPacket& packet);
+	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
+	int GetImage(CImage& image);
 
 protected:
 	CClientController();

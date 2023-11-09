@@ -69,11 +69,15 @@ void CClientController::threadFunc()
 }
 LRESULT CClientController::OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	return LRESULT();
+	CClientSocket* pclient = CClientSocket::getInstance();
+	CPacket* pPack = (CPacket*)wParam;
+	return pclient->Send(*pPack);
 }
 LRESULT CClientController::OnSendData(UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	return LRESULT();
+	CClientSocket* pclient = CClientSocket::getInstance();
+	char* pPack = (char*)wParam;
+	return pclient->Send(pPack, (int)lParam);
 }
 LRESULT CClientController::OnShowStatus(UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -83,6 +87,9 @@ LRESULT CClientController::OnShowWatch(UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	return m_WatchDlg.DoModal();
 }
+
+
+
 CClientController* CClientController::getInstance()
 {
 	if (m_pInstance == NULL)
@@ -98,7 +105,7 @@ CClientController* CClientController::getInstance()
 				{WM_SEND_DATA, &CClientController::OnSendData},
 				{WM_SHOW_STATUS, &CClientController::OnShowStatus},
 				{WM_SHOW_WATCH, &CClientController::OnShowWatch},
-				{-1, NULL}
+				{(UINT)-1, NULL}
 			};
 
 		for (int i = 0; data[i].func != nullptr; i++)
@@ -143,4 +150,64 @@ LRESULT CClientController::SendMessage(MSG msg)
 	//通过事件通知消息发送者完成了处理
 	WaitForSingleObject(hEvent, -1);
 	return info.result;
+}
+
+void CClientController::UpdateAddress(int ip, int port)
+{
+	CClientSocket::getInstance()->UpdateAddress(ip, port);
+}
+
+int CClientController::DealCommand()
+{
+	return CClientSocket::getInstance()->DealCommand();
+}
+
+void CClientController::closeSocket()
+{
+	CClientSocket::getInstance()->closeSocket();
+}
+
+bool CClientController::SendPacket(const CPacket& packet)
+{
+	CClientSocket* pclient = CClientSocket::getInstance();
+	if (pclient->InitSocket() == false)
+	{
+		return false;
+	}
+	pclient->Send(packet);
+	return false;
+}
+
+int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length)
+{
+	CClientSocket* pclient = CClientSocket::getInstance();
+	CPacket pack(nCmd, pData, length);
+	if (pclient->InitSocket() == false)
+	{
+		return false;
+	}
+	pclient->Send(pack);
+	
+	int iRet = pclient->DealCommand();
+	if (iRet == -1)
+	{
+		AfxMessageBox("处理命令失败");
+		TRACE("sCmd : %d\r\n", iRet);
+		pclient->closeSocket();
+		return -1;
+	}
+	TRACE("sCmd : %d\r\n", iRet);
+	if (bAutoClose)
+	{
+		pclient->closeSocket();
+	}
+	return 0;
+}
+
+int CClientController::GetImage(CImage& image)
+{
+	CClientSocket* pclient = CClientSocket::getInstance();
+	//BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
+	return CRemteClientTool::Byte2Image(image, pclient->Getpack().strData);
+	
 }
