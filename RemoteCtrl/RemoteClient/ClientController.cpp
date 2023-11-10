@@ -5,8 +5,8 @@ CClientController::CHelper CClientController::m_helper;
 std::map<UINT, CClientController::MSGFUNC> CClientController::m_mapFunc;
 
 CClientController::CClientController()
-	:m_StatusDlg(&m_RemoteDlg)
-	//m_WatchDlg(&m_RemoteDlg)
+	:m_StatusDlg(&m_RemoteDlg),
+	m_WatchDlg(&m_RemoteDlg)
 {
 	
 
@@ -154,7 +154,7 @@ LRESULT CClientController::OnShowStatus(UINT msg, WPARAM wParam, LPARAM lParam)
 }
 LRESULT CClientController::OnShowWatch(UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	//return m_WatchDlg.DoModal();
+	return m_WatchDlg.DoModal();
 }
 
 

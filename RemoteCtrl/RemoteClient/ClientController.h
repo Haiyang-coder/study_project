@@ -105,7 +105,7 @@ private:
 	CString m_strFileLocalPath;
 	static CClientController* m_pInstance;
 	CRemoteClientDlg m_RemoteDlg;
-	//CWatchDialog m_WatchDlg;
+	CWatchDialog m_WatchDlg;
 	CStatusDlg m_StatusDlg;
 
 	class CHelper
