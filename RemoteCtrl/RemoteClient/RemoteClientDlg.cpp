@@ -70,110 +70,6 @@ void CRemoteClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, listFile, m_list);
 }
 
-//void CRemoteClientDlg::threadDownLoadFile()
-//{
-//	获取文件名
-//	int nListSelected = m_list.GetSelectionMark();
-//	CString strFile = m_list.GetItemText(nListSelected, 0);
-//	用户指定详细的文件存储信息
-//	CFileDialog filedlg(FALSE, "*", m_list.GetItemText(nListSelected, 0), OFN_OVERWRITEPROMPT, NULL, this);
-//	if (filedlg.DoModal() != IDOK)//模态
-//	{
-//		m_dlgStatus.ShowWindow(SW_HIDE);
-//		EndWaitCursor();
-//		return;
-//	}
-//	FILE* pfile = fopen(filedlg.GetPathName(), "wb+");
-//	if (pfile == NULL)
-//	{
-//		AfxMessageBox("无法打开本地指定的文件");
-//		m_dlgStatus.ShowWindow(SW_HIDE);
-//		EndWaitCursor();
-//		return;
-//	}
-//	获取文件的绝对路径
-//	HTREEITEM hseleted = m_tree.GetSelectedItem();
-//	strFile = GetPath(hseleted) + strFile;
-//	TRACE("[%s]\r\n", LPCSTR(strFile));
-//	发送下载命令
-//	这里服务端会回两个数据包，一个是数据大小，一个是数据内容
-//	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
-//	int ret = CClientController::getInstance()->SendCommandPacket(4, false, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
-//	int ret = SendMessage(WM_SEND_PACKET, 4<<1 | 0, (LPARAM)(LPCSTR)strFile);
-//	if (ret < 0)
-//	{
-//		AfxMessageBox("执行下载命令失败了");
-//		TRACE("下载失败：%d\r\n", ret);
-//		fclose(pfile);
-//		m_dlgStatus.ShowWindow(SW_HIDE);
-//		EndWaitCursor();
-//		return;
-//	}
-//	CClientSocket* pClient = CClientSocket::getInstance();
-//	这是第一次传过来的数据大小
-//	long long nLenth = *(long long*)pClient->Getpack().strData.c_str();
-//	if (nLenth <= 0)
-//	{
-//		AfxMessageBox("文件长度为0，或无法读取文件");
-//		fclose(pfile);
-//		pClient->closeSocket();
-//		m_dlgStatus.ShowWindow(SW_HIDE);
-//		EndWaitCursor();
-//		return;
-//	}
-//	long long nCount = 0;
-//	while (nCount < nLenth)
-//	{
-//		开始接收服务端发过来的文件信息
-//		ret = pClient->DealCommand();
-//		if (ret < 0)
-//		{
-//			AfxMessageBox("文件传输失败，请重试");
-//			TRACE("文件传输失败：%d\r\n", ret);
-//			break;
-//		}
-//		fwrite(pClient->Getpack().strData.c_str(), 1, pClient->Getpack().strData.size(), pfile);
-//		nCount += pClient->Getpack().strData.size();
-//
-//	}
-//	fclose(pfile);
-//	pClient->closeSocket();
-//	m_dlgStatus.ShowWindow(SW_HIDE);
-//	EndWaitCursor();
-//	MessageBox(_T("下载完成"), _T("完成"));
-//	return;
-//}
-
-//void CRemoteClientDlg::threadWatchData()
-//{
-//	CClientController* pclient = CClientController::getInstance();
-//	while (m_isCLosed)
-//	{
-//		if (m_isFull == false)
-//		{
-//			int ret = pclient->SendCommandPacket(6);
-//			if (ret == 6)
-//			{
-//				if (pclient->GetImage(m_image) == 0)
-//				{
-//					m_isFull = true;
-//				}
-//				else
-//				{
-//					TRACE("获取图片失败\r\n");
-//				}
-//					
-//			}
-//			else
-//			{
-//				Sleep(10);
-//			}
-//		}
-//		else {
-//			Sleep(1);
-//		}
-//	}
-//}
 
 void CRemoteClientDlg::LoadFileCurrent()
 {
@@ -221,7 +117,6 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_COMMAND(id_downloadfile, &CRemoteClientDlg::Ondownloadfile)
 	ON_COMMAND(id_deletefile, &CRemoteClientDlg::Ondeletefile)
 	ON_COMMAND(id_openfile, &CRemoteClientDlg::Onopenfile)
-	ON_MESSAGE(WM_SEND_PACKET, &CRemoteClientDlg::OnSendPacket)
 	ON_BN_CLICKED(button_startwatch, &CRemoteClientDlg::OnBnClickedstartwatch)
 	ON_WM_TIMER()
 	ON_EN_CHANGE(edit_port, &CRemoteClientDlg::OnEnChangeport)
@@ -580,51 +475,6 @@ void CRemoteClientDlg::Onopenfile()
 		return;
 	}
 }
-
-LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wpatam, LPARAM lParam)
-{
-	int cmd = wpatam >> 1;
-	int ret = 0;
-	switch (cmd)
-	{
-	case 4:
-		{
-			CString strFile = (LPCSTR)lParam;
-			ret = CClientController::getInstance()->SendCommandPacket(cmd, wpatam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
-		}
-		break;
-	case 5://鼠标操作
-	{
-		ret = CClientController::getInstance()->SendCommandPacket(cmd, wpatam & 1, (BYTE*)lParam, sizeof(MOUSEEV));
-	}
-		break;
-	case 6:
-		{
-			ret = CClientController::getInstance()->SendCommandPacket(cmd, wpatam & 1);
-		}
-			
-		break;
-	case 7:
-	{
-		ret = CClientController::getInstance()->SendCommandPacket(cmd, wpatam & 1);
-	}
-
-	break;
-	case 8:
-	{
-		ret = CClientController::getInstance()->SendCommandPacket(cmd, wpatam & 1);
-	}
-
-	break;
-	default:
-		ret = -1;
-		break;
-	}
-
-
-	return ret ;
-}
-
 
 
 

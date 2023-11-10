@@ -29,8 +29,6 @@ public:
 
 private:
 	
-	//void threadDownLoadFile();
-	//void threadWatchData();
 	void LoadFileCurrent();
 	CString GetPath(HTREEITEM htree);
 	void DeleteTreeChileItem(HTREEITEM htree);
@@ -69,7 +67,6 @@ public:
 	afx_msg void Ondownloadfile();
 	afx_msg void Ondeletefile();
 	afx_msg void Onopenfile();
-	afx_msg LRESULT OnSendPacket(WPARAM wpatam, LPARAM lParam);
 private:
 	CImage m_image;//缓存
 	bool m_isFull = false;//缓存是否为慢的
