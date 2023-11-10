@@ -35,6 +35,7 @@ public:
 	bool SendPacket(const CPacket& packet);
 	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
 	int GetImage(CImage& image);
+	int DownLoadFile(const CString& strPath);
 
 protected:
 	CClientController();
@@ -42,6 +43,8 @@ protected:
 	static void releaseInstance();
 private:
 	void threadFunc();
+	void threadDownLoadFile();
+
 private:
 	LRESULT OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT OnSendData(UINT msg, WPARAM wParam, LPARAM lParam);

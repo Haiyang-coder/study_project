@@ -527,15 +527,20 @@ void CRemoteClientDlg::OnNMRClicklistfile(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CRemoteClientDlg::Ondownloadfile()
 {
-	/*
-		添加线程函数
-	*/
-	m_dlgStatus.ShowWindow(SW_SHOW);
-	m_dlgStatus.m_info.SetWindowTextA("命令正在执行中");
-	BeginWaitCursor();
-	std::thread threadDownLoadFile(&CRemoteClientDlg::threadDownLoadFile, this);
-	Sleep(50);
-	threadDownLoadFile.detach();
+	//获取文件名
+	int nListSelected = m_list.GetSelectionMark();
+	CString strFile = m_list.GetItemText(nListSelected, 0);
+	//获取文件的绝对路径
+	HTREEITEM hseleted = m_tree.GetSelectedItem();
+	strFile = GetPath(hseleted) + strFile;
+	TRACE("[%s]\r\n", LPCSTR(strFile));
+	//调用controller
+	int ret = CClientController::getInstance()->DownLoadFile(strFile);
+	if (ret != 0)
+	{
+		MessageBox(_T("下载失败"));
+		TRACE("下载失败:%d \r\n", ret);
+	}
 	
 	
 	

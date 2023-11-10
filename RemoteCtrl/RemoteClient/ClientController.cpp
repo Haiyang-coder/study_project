@@ -67,6 +67,10 @@ void CClientController::threadFunc()
 	}
 	
 }
+void CClientController::threadDownLoadFile()
+{
+	
+}
 LRESULT CClientController::OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
@@ -210,4 +214,30 @@ int CClientController::GetImage(CImage& image)
 	//BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
 	return CRemteClientTool::Byte2Image(image, pclient->Getpack().strData);
 	
+}
+
+int CClientController::DownLoadFile(const CString& strPath)
+{
+	CFileDialog filedlg(FALSE, NULL, strPath, OFN_OVERWRITEPROMPT, NULL, &m_RemoteDlg);
+	if (filedlg.DoModal() == IDOK)//模态
+	{
+		CString strLocal = filedlg.GetPathName();//获取本地存储路径
+		FILE* pfile = fopen(strLocal, "wb+");
+		if (pfile == NULL)
+		{
+			AfxMessageBox("无法打开本地指定的文件");
+			m_StatusDlg.ShowWindow(SW_HIDE);
+			m_RemoteDlg.EndWaitCursor();
+			return;
+		}
+		std::thread threadDownLoadFile(&CClientController::threadDownLoadFile, this);
+		Sleep(50);
+		threadDownLoadFile.detach();
+		m_RemoteDlg.BeginWaitCursor();
+		m_StatusDlg.ShowWindow(SW_SHOW);
+		m_StatusDlg.m_info.SetWindowTextA("命令正在执行中");
+		m_StatusDlg.CenterWindow(&m_RemoteDlg);
+		m_StatusDlg.SetActiveWindow();
+	}
+	return 0;
 }
