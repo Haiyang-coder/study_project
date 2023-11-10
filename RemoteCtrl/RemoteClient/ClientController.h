@@ -21,7 +21,7 @@ class CClientController
 {
 public:
 	
-	//单例模式
+	//单例模
 	static CClientController* getInstance();
 	//启动	
 	int Invoke(CWnd*& pMainWnd);
