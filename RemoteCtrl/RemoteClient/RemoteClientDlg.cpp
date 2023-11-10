@@ -50,9 +50,6 @@ END_MESSAGE_MAP()
 
 
 // CRemoteClientDlg 对话框
-
-
-
 CRemoteClientDlg::CRemoteClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_REMOTECLIENT_DIALOG, pParent)
 	, m_serv_ip(0)
@@ -125,20 +122,9 @@ END_MESSAGE_MAP()
 
 // CRemoteClientDlg 消息处理程序
 
-bool CRemoteClientDlg::GetIsFull() const
-{
-	return m_isFull;
-}
 
-CImage& CRemoteClientDlg::getImage()
-{
-	return m_image;
-}
 
-void CRemoteClientDlg::SetImageStatus(bool isFull)
-{
-	m_isFull = isFull;
-}
+
 
 BOOL CRemoteClientDlg::OnInitDialog()
 {

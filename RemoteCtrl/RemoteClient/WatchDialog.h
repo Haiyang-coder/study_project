@@ -24,12 +24,20 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
+
 	DECLARE_MESSAGE_MAP()
 public:
+	void SetImageStatus(bool isFull = false);
+	bool GetIsFull() const;
+	CImage& getImage();
 	CPoint UserPoint2RemoteScreen(CPoint& point, bool isScreen = false);
+public:
+	
 	virtual BOOL OnInitDialog();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	CStatic m_picture;
+	CImage m_image;//缓存
+	bool m_isFull = false;//缓存是否为慢的
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);

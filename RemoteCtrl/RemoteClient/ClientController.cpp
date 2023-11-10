@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "ClientController.h"
 CClientController* CClientController::m_pInstance = nullptr;
-CClientController::CHelper CClientController::m_helper;
+//CClientController::CHelper CClientController::m_helper;
 std::map<UINT, CClientController::MSGFUNC> CClientController::m_mapFunc;
 
 CClientController::CClientController()
-	:m_StatusDlg(&m_RemoteDlg),
-	m_WatchDlg(&m_RemoteDlg)
+	/*:m_StatusDlg(&m_RemoteDlg),
+	m_WatchDlg(&m_RemoteDlg)*/
 {
 	
 
@@ -111,14 +111,14 @@ void CClientController::threadWatchDlg()
 	CClientController* pclient = CClientController::getInstance();
 	while (m_isCLosed)
 	{
-		if (m_RemoteDlg.GetIsFull() == false)
+		if (m_WatchDlg.GetIsFull() == false)
 		{
 			int ret = SendCommandPacket(6);
 			if (ret == 6)
 			{
-				if (pclient->GetImage(m_RemoteDlg.getImage()) == 0)
+				if (pclient->GetImage(m_WatchDlg.getImage()) == 0)
 				{
-					m_RemoteDlg.SetImageStatus(true);
+					m_WatchDlg.SetImageStatus(true);
 				}
 				else
 				{
@@ -183,7 +183,7 @@ CClientController* CClientController::getInstance()
 		}
 
 	}
-	return nullptr;
+	return m_pInstance;
 }
 
 

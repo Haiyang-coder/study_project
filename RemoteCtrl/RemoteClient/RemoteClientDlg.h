@@ -48,9 +48,8 @@ protected:
 public:
 
 	bool m_isCLosed = true;//这是远程监控显示界面
-	bool GetIsFull() const;
-	CImage& getImage();
-	void SetImageStatus(bool isFull = false);
+
+	
 
 	afx_msg void OnBnClickedtest();
 	DWORD m_serv_ip;
@@ -68,8 +67,7 @@ public:
 	afx_msg void Ondeletefile();
 	afx_msg void Onopenfile();
 private:
-	CImage m_image;//缓存
-	bool m_isFull = false;//缓存是否为慢的
+	
 
 public:
 	afx_msg void OnBnClickedButton1();
