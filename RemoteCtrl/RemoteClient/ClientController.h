@@ -36,6 +36,7 @@ public:
 	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
 	int GetImage(CImage& image);
 	int DownLoadFile(const CString& strPath);
+	void StartWatchScreen();
 
 protected:
 	CClientController();
@@ -44,6 +45,7 @@ protected:
 private:
 	void threadFunc();
 	void threadDownLoadFile();
+	void threadWatchDlg();
 
 private:
 	LRESULT OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -92,11 +94,18 @@ private:
 	typedef LRESULT(CClientController::* MSGFUNC)(UINT msg, WPARAM wParam, LPARAM lParam);
 	static std::map<UINT, MSGFUNC> m_mapFunc;
 	HANDLE m_threadHandle;
+	HANDLE m_threadDownLoadHandle;
+	HANDLE m_threadWatchHandle;
+	bool m_isCLosed = true;//这是远程监控显示界面
 	DWORD m_nthreadId;
-
+	FILE* m_pfile;
+	//下载文件的远程路径
+	CString m_strFileRemotePath;
+	//下载文件的本地保存路径
+	CString m_strFileLocalPath;
 	static CClientController* m_pInstance;
 	CRemoteClientDlg m_RemoteDlg;
-	CWatchDialog m_WatchDlg;
+	//CWatchDialog m_WatchDlg;
 	CStatusDlg m_StatusDlg;
 
 	class CHelper

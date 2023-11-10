@@ -5,8 +5,8 @@ CClientController::CHelper CClientController::m_helper;
 std::map<UINT, CClientController::MSGFUNC> CClientController::m_mapFunc;
 
 CClientController::CClientController()
-	:m_StatusDlg(&m_RemoteDlg),
-	m_WatchDlg(&m_RemoteDlg)
+	:m_StatusDlg(&m_RemoteDlg)
+	//m_WatchDlg(&m_RemoteDlg)
 {
 	
 
@@ -16,6 +16,8 @@ CClientController::~CClientController()
 {
 	m_nthreadId = -1;
 	m_threadHandle = INVALID_HANDLE_VALUE;
+	m_threadWatchHandle = INVALID_HANDLE_VALUE;
+	m_threadDownLoadHandle = INVALID_HANDLE_VALUE;
 }
 void CClientController::releaseInstance()
 {
@@ -69,7 +71,70 @@ void CClientController::threadFunc()
 }
 void CClientController::threadDownLoadFile()
 {
+	CClientSocket* pclientSocket = CClientSocket::getInstance();
+	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength());
+	if (ret < 0)
+	{
+		AfxMessageBox("执行下载命令失败了");
+		TRACE("下载失败：%d\r\n", ret);
+		fclose(m_pfile);
+		m_StatusDlg.ShowWindow(SW_HIDE);
+		m_RemoteDlg.EndWaitCursor();
+		return;
+	}
+	long long nCount = 0;
+	long long nLenth = *(long long*)pclientSocket->Getpack().strData.c_str();
+	while (nCount < nLenth)
+	{
+		//开始接收服务端发过来的文件信息
+		ret = pclientSocket->DealCommand();
+		if (ret < 0)
+		{
+			AfxMessageBox("文件传输失败，请重试");
+			TRACE("文件传输失败：%d\r\n", ret);
+			break;
+		}
+		fwrite(pclientSocket->Getpack().strData.c_str(), 1, pclientSocket->Getpack().strData.size(), m_pfile);
+		nCount += pclientSocket->Getpack().strData.size();
+
+	}
+	fclose(m_pfile);
+	pclientSocket->closeSocket();
+	m_StatusDlg.ShowWindow(SW_HIDE);
+	m_RemoteDlg.EndWaitCursor();
+	m_RemoteDlg.MessageBox(_T("下载完成"), _T("完成"));
+	return;
 	
+}
+void CClientController::threadWatchDlg()
+{
+	CClientController* pclient = CClientController::getInstance();
+	while (m_isCLosed)
+	{
+		if (m_RemoteDlg.GetIsFull() == false)
+		{
+			int ret = SendCommandPacket(6);
+			if (ret == 6)
+			{
+				if (pclient->GetImage(m_RemoteDlg.getImage()) == 0)
+				{
+					m_RemoteDlg.SetImageStatus(true);
+				}
+				else
+				{
+					TRACE("获取图片失败 ret = %d\r\n", ret);
+				}
+
+			}
+			else
+			{
+				Sleep(10);
+			}
+		}
+		else {
+			Sleep(1);
+		}
+	}
 }
 LRESULT CClientController::OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -89,7 +154,7 @@ LRESULT CClientController::OnShowStatus(UINT msg, WPARAM wParam, LPARAM lParam)
 }
 LRESULT CClientController::OnShowWatch(UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	return m_WatchDlg.DoModal();
+	//return m_WatchDlg.DoModal();
 }
 
 
@@ -221,18 +286,20 @@ int CClientController::DownLoadFile(const CString& strPath)
 	CFileDialog filedlg(FALSE, NULL, strPath, OFN_OVERWRITEPROMPT, NULL, &m_RemoteDlg);
 	if (filedlg.DoModal() == IDOK)//模态
 	{
-		CString strLocal = filedlg.GetPathName();//获取本地存储路径
-		FILE* pfile = fopen(strLocal, "wb+");
-		if (pfile == NULL)
+		m_strFileRemotePath = strPath;
+		m_strFileLocalPath = filedlg.GetPathName();//获取本地存储路径
+		m_pfile = fopen(m_strFileLocalPath, "wb+");
+		if (m_pfile == NULL)
 		{
 			AfxMessageBox("无法打开本地指定的文件");
 			m_StatusDlg.ShowWindow(SW_HIDE);
 			m_RemoteDlg.EndWaitCursor();
-			return;
+			return -1;
 		}
 		std::thread threadDownLoadFile(&CClientController::threadDownLoadFile, this);
 		Sleep(50);
 		threadDownLoadFile.detach();
+		m_threadDownLoadHandle = threadDownLoadFile.native_handle();
 		m_RemoteDlg.BeginWaitCursor();
 		m_StatusDlg.ShowWindow(SW_SHOW);
 		m_StatusDlg.m_info.SetWindowTextA("命令正在执行中");
@@ -240,4 +307,13 @@ int CClientController::DownLoadFile(const CString& strPath)
 		m_StatusDlg.SetActiveWindow();
 	}
 	return 0;
+}
+
+void CClientController::StartWatchScreen()
+{
+	m_isCLosed = true;
+	CWatchDialog dlg(&m_RemoteDlg);
+	std::thread threadWatch(&CClientController::threadWatchDlg, this);
+	threadWatch.detach();
+	dlg.DoModal();
 }
