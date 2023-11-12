@@ -8,7 +8,6 @@
 #include"RemteServerTool.h"
 #include<io.h>
 #include"LockDialog.h"
-#include"LockDialog.h"
 #include "resource.h"
 
 

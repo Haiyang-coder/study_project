@@ -14,6 +14,10 @@ CClientController::CClientController()
 CClientController::~CClientController()
 {
 	
+	if (m_threadHandle != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(m_threadHandle);
+	}
 	m_nthreadId = -1;
 	m_threadHandle = INVALID_HANDLE_VALUE;
 	m_threadWatchHandle = INVALID_HANDLE_VALUE;

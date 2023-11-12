@@ -19,6 +19,7 @@ CStatusDlg::CStatusDlg(CWnd* pParent /*=nullptr*/)
 
 CStatusDlg::~CStatusDlg()
 {
+
 }
 
 void CStatusDlg::DoDataExchange(CDataExchange* pDX)

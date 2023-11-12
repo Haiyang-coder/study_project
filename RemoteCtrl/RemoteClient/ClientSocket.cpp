@@ -163,6 +163,7 @@ CClientSocket::CClientSocket(const CClientSocket& ss)
 		m_client_sock = ss.m_client_sock;
 		m_nIp = ss.m_nIp;
 		m_nPort = ss.m_nPort;
+		
 	}
 	
 }
@@ -171,6 +172,7 @@ CClientSocket::~CClientSocket()
 {
 	closesocket(m_client_sock);
 	WSACleanup();
+	TRACE("CClientSocket over\r\n");
 
 }
 
@@ -230,7 +232,6 @@ void CClientSocket::releaseInstance()
 		CClientSocket* tem = m_pinstance;
 		m_pinstance = nullptr;
 		delete tem;
-
 	}
 }
 
@@ -246,7 +247,7 @@ int CClientSocket::DealCommand()
 	{
 		
 		size_t len = recv(m_client_sock, buffer + index, BUFFER_SIZE - index, 0);
-		if ((len <= 0) && (index <= 0))
+		if (((int)len <= 0) && ((int)index <= 0))
 		{
 			return -1;
 		}

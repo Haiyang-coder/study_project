@@ -267,8 +267,7 @@ void CWatchDialog::OnStnClickedwatch()
 void CWatchDialog::OnClose()
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
-	pParent->m_isCLosed = false;
+	CClientController::getInstance()->SetScreenClose(true);
 	CDialog::OnClose();
 }
 

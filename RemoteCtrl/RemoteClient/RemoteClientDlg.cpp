@@ -76,7 +76,7 @@ void CRemoteClientDlg::LoadFileCurrent()
 	m_list.DeleteAllItems();
 	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
 	PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
-	CClientSocket* pClient = CClientSocket::getInstance();
+	CClientController* pClient = CClientController::getInstance();
 	//看一下双击的文件是否还有下一个
 	//有的话进行马上进行处理
 	while (pInfo->HaveNext == TRUE)
@@ -155,7 +155,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	UpdateData();
-	m_serv_ip = 0xAFB28315;//0xAFB28315 //0x7F0000010
+	m_serv_ip = 0x7F000001;//0xAFB28315 //0x7F000001
 	m_serv_port = _T("9527");
 	CClientController* pClent = CClientController::getInstance();
 	pClent->UpdateAddress(m_serv_ip, atoi((LPCTSTR)m_serv_port));
@@ -322,7 +322,7 @@ void CRemoteClientDlg::LoadFileInfo()
 	CString strPath = GetPath(hTreeSelected);
 	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
 	PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
-	CClientSocket* pClient = CClientSocket::getInstance();
+	CClientController* pClient = CClientController::getInstance();
 	//看一下双击的文件是否还有下一个
 	//有的话进行马上进行处理
 	while (pInfo->HaveNext == TRUE)

@@ -37,6 +37,7 @@ public:
 	int GetImage(CImage& image);
 	int DownLoadFile(const CString& strPath);
 	void StartWatchScreen();
+	void SetScreenClose(bool flag);
 
 protected:
 	CClientController();
@@ -44,6 +45,7 @@ protected:
 	static void releaseInstance();
 private:
 	void threadFunc();
+	static void threadFuncEntry(void * arg);
 	void threadDownLoadFile();
 	void threadWatchDlg();
 
@@ -91,6 +93,7 @@ private:
 			result = 0;
 		}
 	};
+	static bool thisEnd;
 	typedef LRESULT(CClientController::* MSGFUNC)(UINT msg, WPARAM wParam, LPARAM lParam);
 	static std::map<UINT, MSGFUNC> m_mapFunc;
 	HANDLE m_threadHandle;
@@ -113,7 +116,7 @@ private:
 	public:
 		CHelper()
 		{
-			CClientController::getInstance();
+			//CClientController::getInstance();
 		}
 		~CHelper()
 		{
