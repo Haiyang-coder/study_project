@@ -94,6 +94,7 @@ void CRemoteClientDlg::LoadFileCurrent()
 		pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
 		TRACE("ack:%d \r\n", cmd);
 	}
+	 
 
 
 	pClient->closeSocket();
