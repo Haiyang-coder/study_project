@@ -122,10 +122,12 @@ void CClientController::threadWatchDlg()
 	{
 		if (m_WatchDlg.GetIsFull() == false)
 		{
-			int ret = SendCommandPacket(6);
+			std::list<CPacket> listPack;
+			int ret = SendCommandPacket(6,true, NULL, 0, &listPack);
 			if (ret == 6)
 			{
-				if (pclient->GetImage(m_WatchDlg.getImage()) == 0)
+				
+				if (CRemteClientTool::Byte2Image(m_WatchDlg.getImage(), listPack.front().strData) == 0)
 				{
 					m_WatchDlg.SetImageStatus(true);
 				}
@@ -145,18 +147,7 @@ void CClientController::threadWatchDlg()
 		}
 	}
 }
-LRESULT CClientController::OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	CClientSocket* pclient = CClientSocket::getInstance();
-	CPacket* pPack = (CPacket*)wParam;
-	return pclient->Send(*pPack);
-}
-LRESULT CClientController::OnSendData(UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	CClientSocket* pclient = CClientSocket::getInstance();
-	char* pPack = (char*)wParam;
-	return pclient->Send(pPack, (int)lParam);
-}
+
 LRESULT CClientController::OnShowStatus(UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	return m_StatusDlg.ShowWindow(SW_SHOW);
@@ -179,8 +170,6 @@ CClientController* CClientController::getInstance()
 			MSGFUNC func;
 		}data[] = 
 			{
-				{WM_SEND_PACKET, &CClientController::OnSendPack},
-				{WM_SEND_DATA, &CClientController::OnSendData},
 				{WM_SHOW_STATUS, &CClientController::OnShowStatus},
 				{WM_SHOW_WATCH, &CClientController::OnShowWatch},
 				{(UINT)-1, NULL}
@@ -247,42 +236,24 @@ void CClientController::closeSocket()
 	CClientSocket::getInstance()->closeSocket();
 }
 
-bool CClientController::SendPacket(const CPacket& packet)
-{
-	CClientSocket* pclient = CClientSocket::getInstance();
-	if (pclient->InitSocket() == false)
-	{
-		return false;
-	}
-	pclient->Send(packet);
-	return false;
-}
 
-int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length)
+int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length, std::list<CPacket>* plstPack)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
 	HANDLE hevent = CreateEvent(nullptr, TRUE, FALSE, NULL);
-	CPacket pack(nCmd, pData, length, hevent);
-	if (pclient->InitSocket() == false)
-	{
-		return -1;
-	}
-	pclient->Send(pack);
 	
-	int iRet = pclient->DealCommand();
-	if (iRet == -1)
+	std::list<CPacket> lstPack;
+	if (plstPack == nullptr)
 	{
-		AfxMessageBox("´¦ÀíÃüÁîÊ§°Ü");
-		TRACE("sCmd : %d\r\n", iRet);
-		pclient->closeSocket();
-		return -1;
+		plstPack = &lstPack;
 	}
-	TRACE("sCmd : %d\r\n", iRet);
-	if (bAutoClose)
+	CPacket pack(nCmd, pData, length, hevent);
+	pclient->SendPacket(pack, *plstPack);
+	if (plstPack->size() > 0)
 	{
-		pclient->closeSocket();
+		return plstPack->front().sCmd;
 	}
-	return nCmd;
+	return -1;
 }
 
 int CClientController::GetImage(CImage& image)

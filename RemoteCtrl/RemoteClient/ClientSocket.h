@@ -5,6 +5,7 @@
 #include<vector>
 #include<list>
 #include<map>
+#include<thread>
 
 #pragma pack(push)
 #pragma pack(1)
@@ -88,18 +89,20 @@ public:
 	static void releaseInstance();
 	bool InitSocket();
 	int DealCommand();
-	bool Send(const char* pData, size_t nize);
-	bool Send(const CPacket& pack);
+	
+	bool SendPacket(const CPacket& pack, std::list<CPacket>& lstPack);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
 	const CPacket& Getpack();
 	void closeSocket();
-	int UpdateAddress(int, int);
+	void UpdateAddress(int, int);
 
-
+protected:
+	bool Send(const char* pData, size_t nize);
+	bool Send(const CPacket& pack);
 
 private:
-	std::list<CPacket&> m_listSend;
+	std::list<CPacket> m_listSend;
 	std::map<HANDLE, std::list<CPacket> >m_mapAck; 
 	int m_nIp;
 	int m_nPort;

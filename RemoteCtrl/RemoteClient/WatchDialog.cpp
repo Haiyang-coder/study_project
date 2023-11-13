@@ -132,9 +132,9 @@ void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 	event.ptXY = remote;
 	event.nButton = 0;//左键
 	event.nAction = 2;//双击
-	CClientSocket* pclient = CClientSocket::getInstance();
+	CClientController* pclient = CClientController::getInstance();
 	CPacket packet(5, (BYTE*) & event, sizeof(event));
-	pclient->Send(packet);
+	pclient->SendCommandPacket(5);
 	CDialog::OnLButtonDblClk(nFlags, point);
 }
 

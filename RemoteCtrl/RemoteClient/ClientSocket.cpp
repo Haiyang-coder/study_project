@@ -132,11 +132,14 @@ const char* const CPacket::Data(std::string& strOut) const
 	return strOut.c_str();
 }
 
-int CClientSocket::UpdateAddress(int nIp, int nPort)
+void CClientSocket::UpdateAddress(int nIp, int nPort)
 {
-	m_nPort = nPort;
-	m_nIp = nIp;
-	return 0;
+	if (m_nIp != nIp || m_nPort != nPort)
+	{
+		m_nPort = nPort;
+		m_nIp = nIp;
+		
+	}
 }
 
 
@@ -146,9 +149,9 @@ CClientSocket* CClientSocket::m_pinstance = nullptr;
 CClientSocket::CHelper CClientSocket::m_helper;
 CClientSocket::CClientSocket():
 	m_nIp(INADDR_ANY),
-	m_nPort(0)
+	m_nPort(0),
+	m_client_sock(INVALID_SOCKET)
 {
-	m_client_sock = INVALID_SOCKET;
 	m_pinstance = NULL;
 	if (InitSockEnv() == FALSE)
 	{
@@ -205,11 +208,6 @@ void CClientSocket::threadEntry(void* arg)
 
 void CClientSocket::threadFunc()
 {
-	if (!InitSocket())
-	{
-		TRACE("初始化socket失败了\r\n");
-		return;
-	}
 	std::string strBuffer;
 	strBuffer.resize(BUFFER_SIZE);
 	char* pbuffer = (char*)strBuffer.c_str();
@@ -218,10 +216,11 @@ void CClientSocket::threadFunc()
 	{
 		if (m_listSend.size() <=  0)
 		{
+			TRACE("m_listSend.size() = %d\r\n", m_listSend.size());
 			Sleep(1);
 			continue;
 		}
-		CPacket& head = m_listSend.front();
+		auto head = m_listSend.front();
 		if (Send(head) == false)
 		{
 			TRACE("发送失败\r\n");
@@ -251,6 +250,7 @@ void CClientSocket::threadFunc()
 		}
 		m_listSend.pop_front();
 	}
+	closesocket(m_client_sock);
 }
 
 bool CClientSocket::InitSocket()
@@ -354,6 +354,33 @@ bool CClientSocket::Send(const CPacket& pack)
 	std::string strOut;
 	pack.Data(strOut);
 	return  send(m_client_sock, strOut.c_str(), strOut.length(), 0);
+}
+
+bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack)
+{
+	if (m_client_sock == INVALID_SOCKET)
+	{
+		if (InitSocket() == false)
+		{
+			return false;
+		}
+		std::thread thread1(&CClientSocket::threadEntry, this);
+		thread1.detach();
+	}
+	m_listSend.push_back(pack);
+	//无限等待,发送线程的处理结果
+	WaitForSingleObject(pack.hEvent, INFINITE);
+	auto itor =  m_mapAck.find(pack.hEvent);
+	if (itor != m_mapAck.end())
+	{
+		for (auto i = itor->second.begin(); i != itor->second.end(); i++)
+		{
+			lstPack.push_back(*i);
+		}
+		m_mapAck.erase(itor);
+		return true;
+	}
+	return false;
 }
 
 bool CClientSocket::GetFilePath(std::string& strPath)

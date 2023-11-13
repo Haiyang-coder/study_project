@@ -32,8 +32,7 @@ public:
 	void UpdateAddress(int ip, int port);
 	int DealCommand();
 	void closeSocket();
-	bool SendPacket(const CPacket& packet);
-	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
+	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0, std::list<CPacket> * plstPack = NULL);
 	int GetImage(CImage& image);
 	int DownLoadFile(const CString& strPath);
 	void StartWatchScreen();
@@ -50,8 +49,6 @@ private:
 	void threadWatchDlg();
 
 private:
-	LRESULT OnSendPack(UINT msg, WPARAM wParam, LPARAM lParam);
-	LRESULT OnSendData(UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT OnShowStatus(UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT OnShowWatch(UINT msg, WPARAM wParam, LPARAM lParam);
 
