@@ -225,7 +225,8 @@ void CRemoteClientDlg::OnBnClickedtest()
 {
 	//true将控件的值赋值给成员变量
 	UpdateData();
-	CClientController::getInstance()->SendCommandPacket(1981);
+	auto ret = CClientController::getInstance()->SendCommandPacket(1981);
+	TRACE("test : result: %d \r\n");
 }
 
 

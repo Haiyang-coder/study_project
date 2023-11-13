@@ -217,7 +217,8 @@ LRESULT CClientController::SendMessage(MSG msg)
 	MsgInfo info(msg);
 	PostThreadMessage(m_nthreadId, WM_SEND_MESSAGE, (WPARAM)&info, (LPARAM)hEvent);
 	//通过事件通知消息发送者完成了处理
-	WaitForSingleObject(hEvent, -1);
+	WaitForSingleObject(hEvent, INFINITY);
+	CloseHandle(hEvent);
 	return info.result;
 }
 
@@ -249,6 +250,7 @@ int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData,
 	}
 	CPacket pack(nCmd, pData, length, hevent);
 	pclient->SendPacket(pack, *plstPack);
+	CloseHandle(hevent);//回收事件句柄,防止资源耗尽
 	if (plstPack->size() > 0)
 	{
 		return plstPack->front().sCmd;
@@ -256,13 +258,6 @@ int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData,
 	return -1;
 }
 
-int CClientController::GetImage(CImage& image)
-{
-	CClientSocket* pclient = CClientSocket::getInstance();
-	//BYTE* pdata = (BYTE*)pclient->Getpack().strData.c_str();
-	return CRemteClientTool::Byte2Image(image, pclient->Getpack().strData);
-	
-}
 
 int CClientController::DownLoadFile(const CString& strPath)
 {

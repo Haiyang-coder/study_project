@@ -150,7 +150,8 @@ CClientSocket::CHelper CClientSocket::m_helper;
 CClientSocket::CClientSocket():
 	m_nIp(INADDR_ANY),
 	m_nPort(0),
-	m_client_sock(INVALID_SOCKET)
+	m_client_sock(INVALID_SOCKET),
+	m_bAutoClose(true)
 {
 	m_pinstance = NULL;
 	if (InitSockEnv() == FALSE)
@@ -174,6 +175,7 @@ CClientSocket::CClientSocket(const CClientSocket& ss)
 		m_client_sock = ss.m_client_sock;
 		m_nIp = ss.m_nIp;
 		m_nPort = ss.m_nPort;
+		m_bAutoClose = ss.m_bAutoClose;
 		
 	}
 	
@@ -212,43 +214,53 @@ void CClientSocket::threadFunc()
 	strBuffer.resize(BUFFER_SIZE);
 	char* pbuffer = (char*)strBuffer.c_str();
 	int index = 0;
+	InitSocket();
 	while (m_client_sock != INVALID_SOCKET)
 	{
-		if (m_listSend.size() <=  0)
+		if (m_listSend.size() >  0)
 		{
-			TRACE("m_listSend.size() = %d\r\n", m_listSend.size());
-			Sleep(1);
-			continue;
-		}
-		auto head = m_listSend.front();
-		if (Send(head) == false)
-		{
-			TRACE("发送失败\r\n");
-			continue;
-		}
-		
-		auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>>(head.hEvent, std::list<CPacket>()));
-		//一个发送为什么只对应了一个接受呢?,对于文件传送来说显然不对
-		int length = recv(m_client_sock, pbuffer, BUFFER_SIZE - index, 0);
-		if (length > 0 || index > 0)
-		{
-			index += length;
-			size_t size = (size_t)index;
-			CPacket pack((BYTE*)pbuffer, size);
-			if (size > 0)
+			
+			auto head = m_listSend.front();
+			if (Send(head) < 0)
 			{
-				//通知对应的事件
-				pack.hEvent = head.hEvent;
-				pr.first->second.push_back(pack);
-				SetEvent(head.hEvent);
+				TRACE("发送失败\r\n");
+				continue;
 			}
 
+			auto pr = m_mapAck.find(head.hEvent);
+			do
+			{
+				//一个发送为什么只对应了一个接受呢?,对于文件传送来说显然不对
+				int length = recv(m_client_sock, pbuffer, BUFFER_SIZE - index, 0);
+				if (length > 0 || index > 0)
+				{
+					index += length;
+					size_t size = (size_t)index;
+					CPacket pack((BYTE*)pbuffer, size);
+					if (size > 0)
+					{
+						//通知对应的事件
+						pack.hEvent = head.hEvent;
+						pr->second.push_back(pack);
+						if (m_mapAutoClose.find(head.hEvent)->second)
+						{
+							SetEvent(head.hEvent);
+						}
+						
+						memmove(pbuffer, pbuffer + size, index - size);
+						index -= size;
+					}
+
+				}
+				else if (length <= 0 && index <= 0)
+				{
+					closesocket(m_client_sock);
+					SetEvent(head.hEvent);//等到服务器关闭后在通知事情完成
+				}
+			} while (m_mapAutoClose.find(head.hEvent)->second);
+			m_listSend.pop_front();
+			InitSocket();
 		}
-		else if (length <= 0 && index <= 0)
-		{
-			closesocket(m_client_sock);
-		}
-		m_listSend.pop_front();
 	}
 	closesocket(m_client_sock);
 }
@@ -338,7 +350,7 @@ int CClientSocket::DealCommand()
 
 bool CClientSocket::Send(const char* pData, size_t nize)
 {
-	if (m_client_sock == -1)
+	if (m_client_sock == INVALID_SOCKET)
 	{
 		return false;
 	}
@@ -347,36 +359,31 @@ bool CClientSocket::Send(const char* pData, size_t nize)
 
 bool CClientSocket::Send(const CPacket& pack)
 {
-	if (m_client_sock == -1)
+	if (m_client_sock == INVALID_SOCKET)
 	{
 		return false;
 	}
 	std::string strOut;
 	pack.Data(strOut);
-	return  send(m_client_sock, strOut.c_str(), strOut.length(), 0);
+	auto ret = send(m_client_sock, strOut.c_str(), strOut.length(), 0);
+	return ret;
 }
 
-bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack)
+bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
 {
 	if (m_client_sock == INVALID_SOCKET)
 	{
-		if (InitSocket() == false)
-		{
-			return false;
-		}
 		std::thread thread1(&CClientSocket::threadEntry, this);
 		thread1.detach();
 	}
+	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>>(pack.hEvent, lstPack));
+	m_mapAutoClose.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
 	m_listSend.push_back(pack);
 	//无限等待,发送线程的处理结果
 	WaitForSingleObject(pack.hEvent, INFINITE);
 	auto itor =  m_mapAck.find(pack.hEvent);
 	if (itor != m_mapAck.end())
 	{
-		for (auto i = itor->second.begin(); i != itor->second.end(); i++)
-		{
-			lstPack.push_back(*i);
-		}
 		m_mapAck.erase(itor);
 		return true;
 	}

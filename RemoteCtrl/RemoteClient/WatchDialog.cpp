@@ -91,17 +91,16 @@ void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 			CRect rect;
 			m_picture.GetWindowRect(rect);
 			//将缓存的图像显示在页面
-			CImage image;
-			pParent->GetImage(image);
 			if (m_iObjWidth == -1)
 			{
-				m_iObjWidth = image.GetWidth();
-				m_iObhHeight = image.GetHeight();
+				m_iObjWidth = m_image.GetWidth();
+				m_iObhHeight = m_image.GetHeight();
 			}
 			//要对画面进行适配
 			m_picture.InvalidateRect(NULL);
-			image.Destroy();
+			m_image.Destroy();
 			SetImageStatus(false);
+			TRACE("更新图片完成: kuan: d% , 高 : d%\r\n",m_iObjWidth, m_iObhHeight);
 		}
 	}
 	CDialog::OnTimer(nIDEvent);

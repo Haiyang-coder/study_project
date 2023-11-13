@@ -33,7 +33,6 @@ public:
 	int DealCommand();
 	void closeSocket();
 	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0, std::list<CPacket> * plstPack = NULL);
-	int GetImage(CImage& image);
 	int DownLoadFile(const CString& strPath);
 	void StartWatchScreen();
 	void SetScreenClose(bool flag);

@@ -70,7 +70,7 @@ typedef struct file_info
 class CClientSocket
 {
 private:
-
+	bool m_bAutoClose;
 	CClientSocket();
 	CClientSocket(const CClientSocket&);
 	~CClientSocket();
@@ -90,7 +90,7 @@ public:
 	bool InitSocket();
 	int DealCommand();
 	
-	bool SendPacket(const CPacket& pack, std::list<CPacket>& lstPack);
+	bool SendPacket(const CPacket& pack, std::list<CPacket>& lstPack,bool isAutoClosed = true);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
 	const CPacket& Getpack();
@@ -102,6 +102,7 @@ protected:
 	bool Send(const CPacket& pack);
 
 private:
+	std::map<HANDLE, bool >m_mapAutoClose;
 	std::list<CPacket> m_listSend;
 	std::map<HANDLE, std::list<CPacket> >m_mapAck; 
 	int m_nIp;
