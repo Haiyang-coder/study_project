@@ -16,7 +16,7 @@ public:
                 strOut += "\n";
             snprintf(buf, sizeof(buf), "%02X ", pData[i] & 0xFF);
             strOut += buf;
-
+			  
 
         }
         strOut += "\n";
