@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SeverSocket.h"
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048000
 //私有静态成员必须初始化 
 CSeverSocket* CSeverSocket::m_pinstance = nullptr;
 CSeverSocket::CHelper CSeverSocket::m_helper;

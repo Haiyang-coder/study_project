@@ -257,7 +257,7 @@ void CClientSocket::threadFunc()
 					closesocket(m_client_sock);
 					SetEvent(head.hEvent);//等到服务器关闭后在通知事情完成
 				}
-			} while (m_mapAutoClose.find(head.hEvent)->second);
+			} while (!m_mapAutoClose.find(head.hEvent)->second);
 			m_listSend.pop_front();
 			InitSocket();
 		}

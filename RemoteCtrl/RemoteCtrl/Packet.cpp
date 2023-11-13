@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Packet.h"
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048000
 CPacket::CPacket()
 {
 }
@@ -8,7 +8,7 @@ CPacket::CPacket()
 CPacket::CPacket(const BYTE* pData, size_t& nSize)
 {
 	size_t i = 0;
-	for (i = 0; i < nSize; i++)
+	for (; i < nSize; i++)
 	{
 		//Ìî³äÊý¾ÝÍ·
 		if (*(WORD*)(pData + i) == 0xFEFF)

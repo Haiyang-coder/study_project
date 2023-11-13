@@ -156,7 +156,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	UpdateData();
-	m_serv_ip = 0x7F000001;//0xAFB28315 //0x7F000001
+	m_serv_ip = 0xAFB28315;//0xAFB28315 //0x7F000001
 	m_serv_port = _T("9527");
 	CClientController* pClent = CClientController::getInstance();
 	pClent->UpdateAddress(m_serv_ip, atoi((LPCTSTR)m_serv_port));
