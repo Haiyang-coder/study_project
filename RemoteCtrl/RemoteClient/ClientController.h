@@ -45,7 +45,7 @@ protected:
 	static void releaseInstance();
 private:
 	void threadFunc();
-	static void threadFuncEntry(void * arg);
+	static unsigned _stdcall threadFuncEntry(void* arg);
 	void threadDownLoadFile();
 	void threadWatchDlg();
 
@@ -100,7 +100,7 @@ private:
 	HANDLE m_threadDownLoadHandle;
 	HANDLE m_threadWatchHandle;
 	bool m_isCLosed = true;//这是远程监控显示界面
-	DWORD m_nthreadId;
+	unsigned int m_nthreadId;
 	FILE* m_pfile;
 	//下载文件的远程路径
 	CString m_strFileRemotePath;

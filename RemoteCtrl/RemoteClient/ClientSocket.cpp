@@ -9,7 +9,7 @@ CPacket::CPacket()
 {
 }
 
-CPacket::CPacket(const BYTE* pData, size_t& nSize)
+CPacket::CPacket(const BYTE* pData, size_t& nSize) :hEvent(INVALID_HANDLE_VALUE)
 {
 	size_t i = 0;
 	for (i = 0; i < nSize; i++)
@@ -62,11 +62,17 @@ CPacket::CPacket(const BYTE* pData, size_t& nSize)
 
 CPacket::CPacket(const CPacket& packet)
 {
-	sHead = packet.sHead;//数据头
-	nLength = packet.nLength;//数据长度（从控制命令到校验的长度）
-	sCmd = packet.sCmd;//控制命令
-	strData = packet.strData;//数据
-	sSum = packet.sSum;//校验
+	if (this != &packet)
+	{
+		sHead = packet.sHead;//数据头
+		nLength = packet.nLength;//数据长度（从控制命令到校验的长度）
+		sCmd = packet.sCmd;//控制命令
+		strData = packet.strData;//数据
+		sSum = packet.sSum;//校验
+		hEvent = packet.hEvent;
+	}
+	
+
 }
 
 CPacket& CPacket::operator=(const CPacket& packet)
@@ -80,10 +86,11 @@ CPacket& CPacket::operator=(const CPacket& packet)
 	sCmd = packet.sCmd;//控制命令
 	strData = packet.strData;//数据
 	sSum = packet.sSum;//校验
+	hEvent = packet.hEvent;
 	return *this;
 }
 
-CPacket::CPacket(WORD nCmd, const BYTE* pData, size_t nSize)
+CPacket::CPacket(WORD nCmd, const BYTE* pData, size_t nSize,  HANDLE hEvent)
 {
 	sHead = 0xFEFF;
 	nLength = nSize + 4;
@@ -101,6 +108,7 @@ CPacket::CPacket(WORD nCmd, const BYTE* pData, size_t nSize)
 	{
 		sSum += BYTE(strData[i]) & 0xFF;
 	}
+	this->hEvent = hEvent;
 }
 
 CPacket::~CPacket()
@@ -171,6 +179,7 @@ CClientSocket::CClientSocket(const CClientSocket& ss)
 CClientSocket::~CClientSocket()
 {
 	closesocket(m_client_sock);
+	m_client_sock = INVALID_SOCKET;
 	WSACleanup();
 	TRACE("CClientSocket over\r\n");
 
@@ -185,6 +194,63 @@ BOOL CClientSocket::InitSockEnv()
 		return FALSE;
 	}
 	return TRUE;
+}
+
+void CClientSocket::threadEntry(void* arg)
+{
+	CClientSocket* thiz = (CClientSocket*)arg;
+	thiz->threadFunc();
+	return;
+}
+
+void CClientSocket::threadFunc()
+{
+	if (!InitSocket())
+	{
+		TRACE("初始化socket失败了\r\n");
+		return;
+	}
+	std::string strBuffer;
+	strBuffer.resize(BUFFER_SIZE);
+	char* pbuffer = (char*)strBuffer.c_str();
+	int index = 0;
+	while (m_client_sock != INVALID_SOCKET)
+	{
+		if (m_listSend.size() <=  0)
+		{
+			Sleep(1);
+			continue;
+		}
+		CPacket& head = m_listSend.front();
+		if (Send(head) == false)
+		{
+			TRACE("发送失败\r\n");
+			continue;
+		}
+		
+		auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>>(head.hEvent, std::list<CPacket>()));
+		//一个发送为什么只对应了一个接受呢?,对于文件传送来说显然不对
+		int length = recv(m_client_sock, pbuffer, BUFFER_SIZE - index, 0);
+		if (length > 0 || index > 0)
+		{
+			index += length;
+			size_t size = (size_t)index;
+			CPacket pack((BYTE*)pbuffer, size);
+			if (size > 0)
+			{
+				//通知对应的事件
+				pack.hEvent = head.hEvent;
+				pr.first->second.push_back(pack);
+				SetEvent(head.hEvent);
+			}
+
+		}
+		else if (length <= 0 && index <= 0)
+		{
+			closesocket(m_client_sock);
+		}
+		m_listSend.pop_front();
+	}
 }
 
 bool CClientSocket::InitSocket()

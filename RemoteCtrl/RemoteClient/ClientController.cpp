@@ -35,8 +35,7 @@ void CClientController::releaseInstance()
 void CClientController::threadFunc()
 {
 	MSG msg;
-	//&& thisEnd == false
-	while (thisEnd == false &&::GetMessage(&msg, nullptr, 0, 0) )
+	while (::GetMessage(&msg, nullptr, 0, 0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -70,12 +69,14 @@ void CClientController::threadFunc()
 		
 		
 	}
-	
+	return;
 }
-void CClientController::threadFuncEntry(void* arg)
+unsigned _stdcall CClientController::threadFuncEntry(void* arg)
 {
 	CClientController* pclientCtr = (CClientController*)arg;
 	pclientCtr->threadFunc();
+	_endthreadex(0);
+	return 0;
 }
 void CClientController::threadDownLoadFile()
 {
@@ -204,11 +205,13 @@ int CClientController::Invoke(CWnd*& pMainWnd)
 int CClientController::InitController()
 {
 	//这里我尝试用c++的线程实现
-	std::thread threadController = std::thread(&CClientController::threadFunc, this);
-	threadController.detach();
-	m_threadHandle = threadController.native_handle();
-	m_nthreadId = GetThreadId(m_threadHandle);
+	//std::thread threadController = std::thread(&CClientController::threadFuncEntry, this);
+	//m_threadHandle = threadController.native_handle();
+	//m_nthreadId = GetThreadId(m_threadHandle);
 
+	//m_StatusDlg.Create(dlg_status, &m_RemoteDlg);
+	//threadController.detach();
+	m_threadHandle = (HANDLE)_beginthreadex(NULL, 0, &CClientController::threadFuncEntry, this, 0, &m_nthreadId);
 	m_StatusDlg.Create(dlg_status, &m_RemoteDlg);
 	return 0;
 }
@@ -258,7 +261,8 @@ bool CClientController::SendPacket(const CPacket& packet)
 int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
-	CPacket pack(nCmd, pData, length);
+	HANDLE hevent = CreateEvent(nullptr, TRUE, FALSE, NULL);
+	CPacket pack(nCmd, pData, length, hevent);
 	if (pclient->InitSocket() == false)
 	{
 		return -1;
