@@ -242,15 +242,16 @@ void CRemoteClientDlg::OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CRemoteClientDlg::OnBnClickedfile()
 {
+	std::list<CPacket> lstpacket;
 	//取到根目录的文件信息
-	int ret = CClientController::getInstance()->SendCommandPacket(1);
-	if(ret == -1)
+	int ret = CClientController::getInstance()->SendCommandPacket(1, true, NULL, 0, &lstpacket);
+	if(ret == -1 || lstpacket.size() <= 0)
 	{
 		AfxMessageBox(_T("命令处理失败"));
 		return;
 	}
-	CClientSocket* pClent = CClientSocket::getInstance();
-	auto drivers = pClent->Getpack().strData;
+	CPacket& head = lstpacket.front();
+	auto drivers = head.strData;
 	std::string dr;
 	m_tree.DeleteAllItems();
 	for (size_t i = 0; i < drivers.size(); i++)
@@ -322,45 +323,35 @@ void CRemoteClientDlg::LoadFileInfo()
 	m_list.DeleteAllItems();
 	//根据双击的结果获取完整的路径信息
 	CString strPath = GetPath(hTreeSelected);
-	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
-	PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
-	CClientController* pClient = CClientController::getInstance();
-	//看一下双击的文件是否还有下一个
-	//有的话进行马上进行处理
-	while (pInfo->HaveNext == TRUE)
+	std::list<CPacket> lstFilePacket;
+	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength(), &lstFilePacket);
+	if (lstFilePacket.size() > 0)
 	{
-		//TRACE("[%s] , d%\r\n", pInfo->szFileName, pInfo->ISDirectory);
-		if (pInfo->ISDirectory)
+		auto itorStart = lstFilePacket.begin();
+		auto itorEnd = lstFilePacket.end();
+		for(; itorStart != itorEnd; itorStart++)
 		{
-			if (CString(pInfo->szFileName) == "." ||
-				CString(pInfo->szFileName) == "..")
+			PFILEINFO pInfo = (PFILEINFO)itorStart->strData.c_str();
+			if (pInfo->HaveNext == FALSE)
 			{
-				int cmd = pClient->DealCommand();
-				if (cmd < 0)
-				{
-					break;
-				}
-				pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
 				continue;
 			}
-			HTREEITEM htreeTemp = m_tree.InsertItem(pInfo->szFileName, hTreeSelected, TVI_LAST);
-			m_tree.InsertItem(NULL, htreeTemp, TVI_LAST);
+			
+			if (pInfo->ISDirectory)
+			{
+				if (CString(pInfo->szFileName) == "." ||
+					CString(pInfo->szFileName) == "..")
+				{
+					continue;
+				}
+				HTREEITEM htreeTemp = m_tree.InsertItem(pInfo->szFileName, hTreeSelected, TVI_LAST);
+				m_tree.InsertItem(NULL, htreeTemp, TVI_LAST);
+			}
+			else {//如果是文件就插入到list里面去
+				m_list.InsertItem(0, pInfo->szFileName);
+			}
 		}
-		else {//如果是文件就插入到list里面去
-			m_list.InsertItem(0, pInfo->szFileName);
-		}
-
-		int cmd = pClient->DealCommand();
-		if (cmd < 0)
-		{
-			break;
-		}
-		pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
-		TRACE("ack:%d \r\n", cmd);
 	}
-
-
-	pClient->closeSocket();
 }
 
 

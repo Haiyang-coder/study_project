@@ -219,11 +219,10 @@ void CClientSocket::threadFunc()
 	{
 		if (m_listSend.size() >  0)
 		{
-			
-			auto head = m_listSend.front();
+			TRACE("m_listSend.size() = %d \r\n", m_listSend.size());
+			CPacket& head = m_listSend.front();
 			if (Send(head) < 0)
 			{
-				InitSocket();
 				TRACE("发送失败\r\n");
 				continue;
 			}
@@ -231,8 +230,7 @@ void CClientSocket::threadFunc()
 			auto pr = m_mapAck.find(head.hEvent);
 			do
 			{
-				//一个发送为什么只对应了一个接受呢?,对于文件传送来说显然不对
-				int length = recv(m_client_sock, pbuffer, BUFFER_SIZE - index, 0);
+				int length = recv(m_client_sock, pbuffer + index, BUFFER_SIZE - index, 0);
 				if (length > 0 || index > 0)
 				{
 					index += length;
@@ -257,6 +255,7 @@ void CClientSocket::threadFunc()
 				{
 					closesocket(m_client_sock);
 					SetEvent(head.hEvent);//等到服务器关闭后在通知事情完成
+					break;
 				}
 			} while (!m_mapAutoClose.find(head.hEvent)->second);
 			m_listSend.pop_front();
@@ -383,12 +382,19 @@ bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack,
 	//无限等待,发送线程的处理结果
 	WaitForSingleObject(pack.hEvent, INFINITE);
 	auto itor =  m_mapAck.find(pack.hEvent);
+	auto itorAuto = m_mapAutoClose.find(pack.hEvent);
 	if (itor != m_mapAck.end())
 	{
-		lstPack.push_back(itor->second.front());
+		std::list<CPacket>::iterator i;
+		for (i = itor->second.begin(); i != itor->second.end(); i++)
+		{
+			lstPack.push_back(*i);
+		}
 		m_mapAck.erase(itor);
+		m_mapAutoClose.erase(itorAuto);
 		return true;
 	}
+	
 	return false;
 }
 

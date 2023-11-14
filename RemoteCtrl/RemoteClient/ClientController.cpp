@@ -249,7 +249,7 @@ int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData,
 		plstPack = &lstPack;
 	}
 	CPacket pack(nCmd, pData, length, hevent);
-	pclient->SendPacket(pack, *plstPack);
+	pclient->SendPacket(pack, *plstPack, bAutoClose);
 	CloseHandle(hevent);//回收事件句柄,防止资源耗尽
 	if (plstPack->size() > 0)
 	{
