@@ -247,9 +247,10 @@ void CClientSocket::threadFunc()
 						pr->second.push_back(pack);
 						memmove(pbuffer, pbuffer + size, index - size);
 						index -= size;
-						TRACE("给packet:  %d 返回event\r\n", pack.sCmd);
+						
 						if (m_mapAutoClose.find(head.hEvent)->second)
 						{
+							TRACE("给packet:  %d 返回event\r\n", pack.sCmd);
 							SetEvent(head.hEvent);
 							break;
 						}
@@ -271,11 +272,21 @@ void CClientSocket::threadFunc()
 		}
 		else
 		{
-			TRACE("size shi 0\r\n");
 			Sleep(10);
 		}
 	}
 	closesocket(m_client_sock);
+}
+
+void CClientSocket::threadFuncEx(void* arg)
+{
+	MSG msg;
+	while (::GetMessage(&msg,NULL,0 ,0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+
+	}
 }
 
 bool CClientSocket::InitSocket()

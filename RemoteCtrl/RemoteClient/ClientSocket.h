@@ -82,6 +82,7 @@ private:
 
 	static void threadEntry(void* arg);
 	void threadFunc();
+	void threadFuncEx(void* arg);
 
 
 

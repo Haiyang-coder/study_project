@@ -80,8 +80,9 @@ unsigned _stdcall CClientController::threadFuncEntry(void* arg)
 }
 void CClientController::threadDownLoadFile()
 {
+	std::list<CPacket> plstPack;
 	CClientSocket* pclientSocket = CClientSocket::getInstance();
-	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength());
+	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(), &plstPack);
 	if (ret < 0)
 	{
 		AfxMessageBox("Ö´ÐÐÏÂÔØÃüÁîÊ§°ÜÁË");
