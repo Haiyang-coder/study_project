@@ -90,6 +90,8 @@ void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 		{
 			CRect rect;
 			m_picture.GetWindowRect(rect);
+			m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
+				.Width(), rect.Height(), SRCCOPY);
 			//将缓存的图像显示在页面
 			if (m_iObjWidth == -1)
 			{
@@ -100,7 +102,7 @@ void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 			m_picture.InvalidateRect(NULL);
 			m_image.Destroy();
 			SetImageStatus(false);
-			TRACE("更新图片完成: kuan: d% , 高 : d%\r\n",m_iObjWidth, m_iObhHeight);
+			//TRACE("更新图片完成: kuan: d% , 高 : d%\r\n",m_iObjWidth, m_iObhHeight);
 		}
 	}
 	CDialog::OnTimer(nIDEvent);

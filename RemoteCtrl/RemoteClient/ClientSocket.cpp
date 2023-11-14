@@ -223,6 +223,7 @@ void CClientSocket::threadFunc()
 			auto head = m_listSend.front();
 			if (Send(head) < 0)
 			{
+				InitSocket();
 				TRACE("·¢ËÍÊ§°Ü\r\n");
 				continue;
 			}
@@ -384,6 +385,7 @@ bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack,
 	auto itor =  m_mapAck.find(pack.hEvent);
 	if (itor != m_mapAck.end())
 	{
+		lstPack.push_back(itor->second.front());
 		m_mapAck.erase(itor);
 		return true;
 	}

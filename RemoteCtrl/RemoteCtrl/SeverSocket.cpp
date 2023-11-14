@@ -95,6 +95,7 @@ int CSeverSocket::RunFunc(SOCKE_CALLBACK callbackFunc, void* arg, short port)
 			}
 			
 		}
+		
 		CloseSocket();
 	}
 	
@@ -154,20 +155,21 @@ int CSeverSocket::DealCommand()
 	while (true)
 	{
 		//目前没有处理粘包问题，默认每次接受只来一个数据包
-		size_t len  = recv(m_client, buffer + index, BUFFER_SIZE - index, 0);
+		int len  = recv(m_client, buffer + index, BUFFER_SIZE - index, 0);
 		if (len <= 0)
 		{
 			delete[] buffer;
 			return -1;
 		}
-		index += len;
-		len = index;
-		CPacket packet((BYTE*)buffer, len);
+		size_t length = len;
+		index += length;
+		length = index;
+		CPacket packet((BYTE*)buffer, length);
 		m_packet = packet;
-		if (len > 0)
+		if (length > 0)
 		{
-			memmove(buffer, buffer + len, BUFFER_SIZE - len);
-			index -= len;
+			memmove(buffer, buffer + length, BUFFER_SIZE - length);
+			index -= length;
 			delete[] buffer;
 			return packet.sCmd;
 		}
