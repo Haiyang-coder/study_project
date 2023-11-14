@@ -151,7 +151,8 @@ CClientSocket::CClientSocket():
 	m_nIp(INADDR_ANY),
 	m_nPort(0),
 	m_client_sock(INVALID_SOCKET),
-	m_bAutoClose(true)
+	m_bAutoClose(true),
+	m_threadSocket(INVALID_HANDLE_VALUE)
 {
 	m_pinstance = NULL;
 	if (InitSockEnv() == FALSE)
@@ -220,14 +221,17 @@ void CClientSocket::threadFunc()
 		if (m_listSend.size() >  0)
 		{
 			TRACE("m_listSend.size() = %d \r\n", m_listSend.size());
+			m_lock.lock();
 			CPacket& head = m_listSend.front();
+			m_lock.unlock();
 			if (Send(head) < 0)
 			{
 				TRACE("发送失败\r\n");
 				continue;
 			}
-
+			m_lock.lock();
 			auto pr = m_mapAck.find(head.hEvent);
+			m_lock.unlock();
 			do
 			{
 				int length = recv(m_client_sock, pbuffer + index, BUFFER_SIZE - index, 0);
@@ -241,25 +245,34 @@ void CClientSocket::threadFunc()
 						//通知对应的事件
 						pack.hEvent = head.hEvent;
 						pr->second.push_back(pack);
+						memmove(pbuffer, pbuffer + size, index - size);
+						index -= size;
+						TRACE("给packet:  %d 返回event\r\n", pack.sCmd);
 						if (m_mapAutoClose.find(head.hEvent)->second)
 						{
 							SetEvent(head.hEvent);
+							break;
 						}
-						
-						memmove(pbuffer, pbuffer + size, index - size);
-						index -= size;
 					}
 
 				}
 				else if (length <= 0 && index <= 0)
 				{
+					TRACE("对方断开了链接,给packe  %d 返回event\r\n",head.sCmd);
 					closesocket(m_client_sock);
 					SetEvent(head.hEvent);//等到服务器关闭后在通知事情完成
 					break;
 				}
-			} while (!m_mapAutoClose.find(head.hEvent)->second);
+			} while (!m_mapAutoClose.find(head.hEvent)->second );
+			m_lock.lock();
 			m_listSend.pop_front();
+			m_lock.unlock();
 			InitSocket();
+		}
+		else
+		{
+			TRACE("size shi 0\r\n");
+			Sleep(10);
 		}
 	}
 	closesocket(m_client_sock);
@@ -291,6 +304,11 @@ bool CClientSocket::InitSocket()
 	}
 
 	return true;
+}
+
+bool CClientSocket::InitSocketThread()
+{
+	return false;
 }
 
 
@@ -371,30 +389,33 @@ bool CClientSocket::Send(const CPacket& pack)
 
 bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
 {
-	if (m_client_sock == INVALID_SOCKET)
+	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
 	{
 		std::thread thread1(&CClientSocket::threadEntry, this);
+		m_threadSocket = thread1.native_handle();
+		TRACE("==================================================看到这个说明线程被调用了\r\n");
 		thread1.detach();
 	}
-	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>>(pack.hEvent, lstPack));
+	m_lock.lock();
+	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>&>(pack.hEvent, lstPack));
 	m_mapAutoClose.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
 	m_listSend.push_back(pack);
+	m_lock.unlock();
 	//无限等待,发送线程的处理结果
+	TRACE("pack:是 %d 开始等待=====\r\n", pack.sCmd);
 	WaitForSingleObject(pack.hEvent, INFINITE);
 	auto itor =  m_mapAck.find(pack.hEvent);
 	auto itorAuto = m_mapAutoClose.find(pack.hEvent);
 	if (itor != m_mapAck.end())
 	{
-		std::list<CPacket>::iterator i;
-		for (i = itor->second.begin(); i != itor->second.end(); i++)
-		{
-			lstPack.push_back(*i);
-		}
+		m_lock.lock();
 		m_mapAck.erase(itor);
 		m_mapAutoClose.erase(itorAuto);
+		m_lock.unlock();
+		TRACE("pack:是 %d 等待结束了 一共接受了 %d 个包====\r\n", pack.sCmd, lstPack.size());
 		return true;
 	}
-	
+	TRACE("pack:是 %d 等待结束了失败了!!! 一共接受了 0个包====\r\n");
 	return false;
 }
 

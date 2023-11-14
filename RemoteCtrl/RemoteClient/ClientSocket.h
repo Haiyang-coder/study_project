@@ -6,6 +6,7 @@
 #include<list>
 #include<map>
 #include<thread>
+#include<mutex>
 
 #pragma pack(push)
 #pragma pack(1)
@@ -89,6 +90,7 @@ public:
 	static CClientSocket* getInstance();
 	static void releaseInstance();
 	bool InitSocket();
+	bool InitSocketThread();
 	int DealCommand();
 	
 	bool SendPacket(const CPacket& pack, std::list<CPacket>& lstPack,bool isAutoClosed = true);
@@ -103,9 +105,11 @@ protected:
 	bool Send(const CPacket& pack);
 
 private:
+	HANDLE m_threadSocket;
+	std::mutex m_lock;
 	std::map<HANDLE, bool >m_mapAutoClose;
 	std::list<CPacket> m_listSend;
-	std::map<HANDLE, std::list<CPacket> >m_mapAck; 
+	std::map<HANDLE, std::list<CPacket>& >m_mapAck; 
 	int m_nIp;
 	int m_nPort;
 	std::vector<char> m_buffer;
