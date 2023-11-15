@@ -10,6 +10,8 @@
 
 #pragma pack(push)
 #pragma pack(1)
+#define WM_SEND_PACKET (WM_USER + 1) //发送包数据
+#define WM_SEND_PACKET_ACK (WM_USER + 2)	//发送包数据应答
 
 class CPacket
 {
@@ -30,8 +32,6 @@ public:
 	WORD sCmd = 0;//控制命令
 	std::string strData = "";//数据
 	WORD sSum = 0;//校验(只校验数据部分)
-	HANDLE hEvent;
-	//std::string strOut;	//整個包的數據
 
 
 
@@ -82,7 +82,7 @@ private:
 
 	static void threadEntry(void* arg);
 	void threadFunc();
-	void threadFuncEx(void* arg);
+	void threadFuncEx();
 
 
 
@@ -94,7 +94,7 @@ public:
 	bool InitSocketThread();
 	int DealCommand();
 	
-	bool SendPacket(const CPacket& pack, std::list<CPacket>& lstPack,bool isAutoClosed = true);
+	bool SendPacket(HWND hWnd, const CPacket& pack,  bool isAutoClosed = true);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
 	const CPacket& Getpack();
@@ -105,8 +105,50 @@ protected:
 	bool Send(const char* pData, size_t nize);
 	bool Send(const CPacket& pack);
 
+	void SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam);
+
 private:
+	enum ModelEnum
+	{
+		CSM_AUTOCLOSE = 1 //自动关闭模式
+	};
+	typedef struct PacketData
+	{
+		std::string strData;
+		UINT nMode;
+		PacketData(const char* pData, size_t len, UINT mode)
+		{
+			strData.resize(len);
+			memcpy((char*)strData.c_str(), pData, len);
+			nMode = mode;
+		}
+		PacketData(const PacketData& pack)
+		{
+			if (&pack != this)
+			{
+				strData = pack.strData;
+				nMode = pack.nMode;
+			}
+			
+		}
+
+		PacketData& operator=(const PacketData& pack)
+		{
+			if (&pack != this)
+			{
+				strData = pack.strData;
+				nMode = pack.nMode;
+
+			}
+			return *this;
+		}
+	} PACKET_DATA;
+	
+
+	typedef void(CClientSocket::* MSGFUNC)(UINT nMsg, WPARAM wParam, LPARAM lParam);
+	std::map<UINT, MSGFUNC> m_mapMsgFuction;
 	HANDLE m_threadSocket;
+	DWORD m_threadSocketID;
 	std::mutex m_lock;
 	std::map<HANDLE, bool >m_mapAutoClose;
 	std::list<CPacket> m_listSend;

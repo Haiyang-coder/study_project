@@ -74,7 +74,7 @@ void CRemoteClientDlg::LoadFileCurrent()
 	auto  strPath = GetPath(htree);
 
 	m_list.DeleteAllItems();
-	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
+	int nCmd = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(),2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
 	PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance()->Getpack().strData.c_str();
 	CClientController* pClient = CClientController::getInstance();
 	//看一下双击的文件是否还有下一个
@@ -225,7 +225,7 @@ void CRemoteClientDlg::OnBnClickedtest()
 {
 	//true将控件的值赋值给成员变量
 	UpdateData();
-	auto ret = CClientController::getInstance()->SendCommandPacket(1981);
+	auto ret = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 1981);
 	TRACE("test : result: %d \r\n");
 }
 
@@ -244,7 +244,7 @@ void CRemoteClientDlg::OnBnClickedfile()
 {
 	std::list<CPacket> lstpacket;
 	//取到根目录的文件信息
-	int ret = CClientController::getInstance()->SendCommandPacket(1, true, NULL, 0, &lstpacket);
+	int ret = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 1, true, NULL, 0);
 	if(ret == -1 || lstpacket.size() <= 0)
 	{
 		AfxMessageBox(_T("命令处理失败"));
@@ -324,7 +324,7 @@ void CRemoteClientDlg::LoadFileInfo()
 	//根据双击的结果获取完整的路径信息
 	CString strPath = GetPath(hTreeSelected);
 	std::list<CPacket> lstFilePacket;
-	int nCmd = CClientController::getInstance()->SendCommandPacket(2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength(), &lstFilePacket);
+	int nCmd = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength());
 	if (lstFilePacket.size() > 0)
 	{
 		auto itorStart = lstFilePacket.begin();
@@ -428,7 +428,7 @@ void CRemoteClientDlg::Ondeletefile()
 	int seleced = m_list.GetSelectionMark();
 	CString strFile = m_list.GetItemText(seleced, 0);
 	strFile = strPath + strFile;
-	int ret = CClientController::getInstance()->SendCommandPacket(9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	int ret = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 	if (ret < 0)
 	{
 		AfxMessageBox("删除文件失败，请重试");
@@ -446,7 +446,7 @@ void CRemoteClientDlg::Onopenfile()
 	int seleced = m_list.GetSelectionMark();
 	CString strFile = m_list.GetItemText(seleced, 0);
 	strFile = strPath + strFile;
-	int ret = CClientController::getInstance()->SendCommandPacket(3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	int ret = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 	if (ret < 0)
 	{
 		AfxMessageBox("打开文件失败，请重试");

@@ -9,7 +9,7 @@ CPacket::CPacket()
 {
 }
 
-CPacket::CPacket(const BYTE* pData, size_t& nSize) :hEvent(INVALID_HANDLE_VALUE)
+CPacket::CPacket(const BYTE* pData, size_t& nSize) 
 {
 	size_t i = 0;
 	for (i = 0; i < nSize; i++)
@@ -69,7 +69,6 @@ CPacket::CPacket(const CPacket& packet)
 		sCmd = packet.sCmd;//控制命令
 		strData = packet.strData;//数据
 		sSum = packet.sSum;//校验
-		hEvent = packet.hEvent;
 	}
 	
 
@@ -86,7 +85,6 @@ CPacket& CPacket::operator=(const CPacket& packet)
 	sCmd = packet.sCmd;//控制命令
 	strData = packet.strData;//数据
 	sSum = packet.sSum;//校验
-	hEvent = packet.hEvent;
 	return *this;
 }
 
@@ -108,7 +106,6 @@ CPacket::CPacket(WORD nCmd, const BYTE* pData, size_t nSize,  HANDLE hEvent)
 	{
 		sSum += BYTE(strData[i]) & 0xFF;
 	}
-	this->hEvent = hEvent;
 }
 
 CPacket::~CPacket()
@@ -167,17 +164,38 @@ CClientSocket::CClientSocket():
 	}
 	m_buffer.resize(BUFFER_SIZE);
 	memset(m_buffer.data(), 0, BUFFER_SIZE);
+	struct
+	{
+		UINT message;
+		MSGFUNC func;
+	}FuncStruct[] = {
+		{WM_SEND_PACKET, &CClientSocket::SendPack},
+		{0, NULL}
+	};
+	for (int i = 0; i < FuncStruct[i].message != 0; i++)
+	{
+		if (m_mapMsgFuction.insert(std::pair<UINT, MSGFUNC>(FuncStruct[i].message, FuncStruct[i].func)).second == false)
+			TRACE("消息函数插入失败\r\n");
+	}
 }
 
 CClientSocket::CClientSocket(const CClientSocket& ss)
 {
 	if (&ss != this)
 	{
+		m_threadSocket = ss.m_threadSocket;
 		m_client_sock = ss.m_client_sock;
 		m_nIp = ss.m_nIp;
 		m_nPort = ss.m_nPort;
 		m_bAutoClose = ss.m_bAutoClose;
-		
+		auto itorStart = ss.m_mapMsgFuction.begin();
+		auto itorEnd = ss.m_mapMsgFuction.end();
+		while (itorStart != itorEnd)
+		{
+			m_mapMsgFuction.insert(*itorStart);
+			itorStart++;
+		}
+
 	}
 	
 }
@@ -204,88 +222,25 @@ BOOL CClientSocket::InitSockEnv()
 
 void CClientSocket::threadEntry(void* arg)
 {
+	TRACE("==================================================看到这个说明线程被调用了\r\n");
 	CClientSocket* thiz = (CClientSocket*)arg;
-	thiz->threadFunc();
+	thiz->threadFuncEx();
 	return;
 }
 
-void CClientSocket::threadFunc()
-{
-	std::string strBuffer;
-	strBuffer.resize(BUFFER_SIZE);
-	char* pbuffer = (char*)strBuffer.c_str();
-	int index = 0;
-	InitSocket();
-	while (m_client_sock != INVALID_SOCKET)
-	{
-		if (m_listSend.size() >  0)
-		{
-			TRACE("m_listSend.size() = %d \r\n", m_listSend.size());
-			m_lock.lock();
-			CPacket& head = m_listSend.front();
-			m_lock.unlock();
-			if (Send(head) < 0)
-			{
-				TRACE("发送失败\r\n");
-				continue;
-			}
-			m_lock.lock();
-			auto pr = m_mapAck.find(head.hEvent);
-			m_lock.unlock();
-			do
-			{
-				int length = recv(m_client_sock, pbuffer + index, BUFFER_SIZE - index, 0);
-				if (length > 0 || index > 0)
-				{
-					index += length;
-					size_t size = (size_t)index;
-					CPacket pack((BYTE*)pbuffer, size);
-					if (size > 0)
-					{
-						//通知对应的事件
-						pack.hEvent = head.hEvent;
-						pr->second.push_back(pack);
-						memmove(pbuffer, pbuffer + size, index - size);
-						index -= size;
-						
-						if (m_mapAutoClose.find(head.hEvent)->second)
-						{
-							TRACE("给packet:  %d 返回event\r\n", pack.sCmd);
-							SetEvent(head.hEvent);
-							break;
-						}
-					}
 
-				}
-				else if (length <= 0 && index <= 0)
-				{
-					TRACE("对方断开了链接,给packe  %d 返回event\r\n",head.sCmd);
-					closesocket(m_client_sock);
-					SetEvent(head.hEvent);//等到服务器关闭后在通知事情完成
-					break;
-				}
-			} while (!m_mapAutoClose.find(head.hEvent)->second );
-			m_lock.lock();
-			m_listSend.pop_front();
-			m_lock.unlock();
-			InitSocket();
-		}
-		else
-		{
-			Sleep(10);
-		}
-	}
-	closesocket(m_client_sock);
-}
-
-void CClientSocket::threadFuncEx(void* arg)
+void CClientSocket::threadFuncEx()
 {
 	MSG msg;
 	while (::GetMessage(&msg,NULL,0 ,0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-
+		if (m_mapMsgFuction.find(msg.message) != m_mapMsgFuction.end())
+		{
+			(this->*m_mapMsgFuction[msg.message])(msg.message, msg.wParam, msg.lParam);
+			
+		}
 	}
 }
 
@@ -398,36 +353,126 @@ bool CClientSocket::Send(const CPacket& pack)
 	return ret;
 }
 
-bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
+void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lParam/**/)
+{
+	HWND hWnd = (HWND)lParam;
+	PACKET_DATA Data = *(PACKET_DATA*)wParam;
+	
+	//TODO我试试不在这里删除这个
+	if (InitSocket() == true)
+	{
+		int ret = send(m_client_sock, (char*)Data.strData.c_str(), (int)Data.strData.size(), 0);
+		if (ret > 0)
+		{
+			size_t index = 0;//缓存区中现存的数据量
+			std::string strBuffer;
+			strBuffer.resize(BUFFER_SIZE);
+			char* pbuffer = (char*)strBuffer.c_str();
+			while (m_client_sock != INVALID_SOCKET)
+			{
+				int length = recv(m_client_sock, pbuffer + index, BUFFER_SIZE - index, 0);
+				if (length > 0 || index > 0)
+				{
+					//接受数据正常
+					index += (size_t)length;
+					size_t nLen = index;
+					CPacket packet((BYTE*)pbuffer, nLen);
+					if (nLen > 0)
+					{
+						::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(packet), NULL);
+						if (Data.nMode == CSM_AUTOCLOSE)
+						{
+							//构造数据成功,模式是自动关闭socket的模式
+							closeSocket();
+							return;
+						}
+						//数据已经成功构造,需要整理缓存
+						index -= nLen;
+						memmove(pbuffer, pbuffer + nLen, index);
+						
+					}
+					else
+					{
+						//缓存区的数据中存在问题,不能解析出数据
+						TRACE("解析包错误\r\n");
+						::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(packet), NULL);
+						return;
+					}
+				}
+				else
+				{
+					//结束或者网络设备异常
+					TRACE("对方断开链接\r\n");
+					closeSocket();
+					::SendMessage(hWnd, WM_SEND_PACKET_ACK, NULL, NULL);
+				}
+				
+			}
+			
+		}
+		else
+		{
+			TRACE("send发送失败\r\n");
+			this->closeSocket();
+			::SendMessage(hWnd, WM_SEND_PACKET_ACK, NULL, NULL);
+		}
+		
+	}
+	else
+	{
+		TRACE("初始化socket失败\r\n");
+		::SendMessage(hWnd, WM_SEND_PACKET_ACK, NULL, NULL);
+	}
+	
+}
+
+//bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
+//{
+//	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
+//	{
+//		std::thread thread1(&CClientSocket::threadEntry, this);
+//		m_threadSocket = thread1.native_handle();
+//		TRACE("==================================================看到这个说明线程被调用了\r\n");
+//		thread1.detach();
+//	}
+//	
+//
+//	m_lock.lock();
+//	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>&>(pack.hEvent, lstPack));
+//	m_mapAutoClose.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
+//	m_listSend.push_back(pack);
+//	m_lock.unlock();
+//	无限等待,发送线程的处理结果
+//	TRACE("pack:是 %d 开始等待=====\r\n", pack.sCmd);
+//	WaitForSingleObject(pack.hEvent, INFINITE);
+//	auto itor =  m_mapAck.find(pack.hEvent);
+//	auto itorAuto = m_mapAutoClose.find(pack.hEvent);
+//	if (itor != m_mapAck.end())
+//	{
+//		m_lock.lock();
+//		m_mapAck.erase(itor);
+//		m_mapAutoClose.erase(itorAuto);
+//		m_lock.unlock();
+//		TRACE("pack:是 %d 等待结束了 一共接受了 %d 个包====\r\n", pack.sCmd, lstPack.size());
+//		return true;
+//	}
+//	TRACE("pack:是 %d 等待结束了失败了!!! 一共接受了 0个包====\r\n");
+//	return false;
+//}
+
+bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed)
 {
 	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
 	{
 		std::thread thread1(&CClientSocket::threadEntry, this);
 		m_threadSocket = thread1.native_handle();
-		TRACE("==================================================看到这个说明线程被调用了\r\n");
+		m_threadSocketID = GetThreadId(m_threadSocket);
 		thread1.detach();
 	}
-	m_lock.lock();
-	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>&>(pack.hEvent, lstPack));
-	m_mapAutoClose.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
-	m_listSend.push_back(pack);
-	m_lock.unlock();
-	//无限等待,发送线程的处理结果
-	TRACE("pack:是 %d 开始等待=====\r\n", pack.sCmd);
-	WaitForSingleObject(pack.hEvent, INFINITE);
-	auto itor =  m_mapAck.find(pack.hEvent);
-	auto itorAuto = m_mapAutoClose.find(pack.hEvent);
-	if (itor != m_mapAck.end())
-	{
-		m_lock.lock();
-		m_mapAck.erase(itor);
-		m_mapAutoClose.erase(itorAuto);
-		m_lock.unlock();
-		TRACE("pack:是 %d 等待结束了 一共接受了 %d 个包====\r\n", pack.sCmd, lstPack.size());
-		return true;
-	}
-	TRACE("pack:是 %d 等待结束了失败了!!! 一共接受了 0个包====\r\n");
-	return false;
+	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
+	std::string strOut;
+	pack.Data(strOut);
+	return PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode), (LPARAM)hWnd);
 }
 
 bool CClientSocket::GetFilePath(std::string& strPath)

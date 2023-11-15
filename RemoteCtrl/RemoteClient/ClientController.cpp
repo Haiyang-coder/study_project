@@ -82,7 +82,7 @@ void CClientController::threadDownLoadFile()
 {
 	std::list<CPacket> plstPack;
 	CClientSocket* pclientSocket = CClientSocket::getInstance();
-	int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(), &plstPack);
+	int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength());
 	if (ret < 0)
 	{
 		AfxMessageBox("执行下载命令失败了");
@@ -124,7 +124,9 @@ void CClientController::threadWatchDlg()
 		if (m_WatchDlg.GetIsFull() == false)
 		{
 			std::list<CPacket> listPack;
-			int ret = SendCommandPacket(6,true, NULL, 0, &listPack);
+			int ret = SendCommandPacket(m_WatchDlg.GetSafeHwnd(), 6, true, NULL, 0);
+			//todo:添加消息相应函数WM_send_packet_ack
+			//控制发送频率
 			if (ret == 6)
 			{
 				
@@ -239,24 +241,10 @@ void CClientController::closeSocket()
 }
 
 
-int CClientController::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t length, std::list<CPacket>* plstPack)
+bool CClientController::SendCommandPacket(HWND hwnd, int nCmd, bool bAutoClose, BYTE* pData, size_t length)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
-	HANDLE hevent = CreateEvent(nullptr, TRUE, FALSE, NULL);
-	
-	std::list<CPacket> lstPack;
-	if (plstPack == nullptr)
-	{
-		plstPack = &lstPack;
-	}
-	CPacket pack(nCmd, pData, length, hevent);
-	pclient->SendPacket(pack, *plstPack, bAutoClose);
-	CloseHandle(hevent);//回收事件句柄,防止资源耗尽
-	if (plstPack->size() > 0)
-	{
-		return plstPack->front().sCmd;
-	}
-	return -1;
+	return pclient->SendPacket(hwnd, CPacket(nCmd, pData, length), bAutoClose);
 }
 
 
