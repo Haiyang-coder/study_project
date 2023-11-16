@@ -43,6 +43,7 @@ BEGIN_MESSAGE_MAP(CWatchDialog, CDialog)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON1, &CWatchDialog::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CWatchDialog::OnBnClickedButton2)
+	ON_MESSAGE(WM_SEND_PACKET_ACK, &CWatchDialog::OnSendPacketACK)
 END_MESSAGE_MAP()
 
 
@@ -120,6 +121,31 @@ bool CWatchDialog::GetIsFull() const
 CImage& CWatchDialog::getImage()
 {
 	return m_image;
+}
+
+LRESULT CWatchDialog::OnSendPacketACK(WPARAM wParam, LPARAM lParam)
+{
+	if (lParam == 0)
+	{
+		CPacket* pPacket = (CPacket*)wParam;
+		if (pPacket != NULL)
+		{
+			pPacket.
+		}
+		else 
+		{
+
+		}
+	}
+	else if(lParam < 0)
+	{
+		//错误处理
+	}
+	else
+	{
+		//对方关闭了套接字
+	}
+	return LRESULT();
 }
 
 void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)

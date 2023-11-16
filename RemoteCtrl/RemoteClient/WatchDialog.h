@@ -3,6 +3,10 @@
 
 
 // CWatchDialog 对话框
+#ifndef WM_SEND_PACKET_ACK
+#define WM_SEND_PACKET_ACK (WM_USER + 2)	//发送包数据应答
+#endif // !WM_SEND_PACKET_ACK
+
 
 class CWatchDialog : public CDialog
 {
@@ -38,6 +42,7 @@ public:
 	CStatic m_picture;
 	CImage m_image;//缓存
 	bool m_isFull = false;//缓存是否为慢的
+	afx_msg LRESULT OnSendPacketACK(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);

@@ -10,8 +10,6 @@
 
 #pragma pack(push)
 #pragma pack(1)
-#define WM_SEND_PACKET (WM_USER + 1) //发送包数据
-#define WM_SEND_PACKET_ACK (WM_USER + 2)	//发送包数据应答
 
 class CPacket
 {

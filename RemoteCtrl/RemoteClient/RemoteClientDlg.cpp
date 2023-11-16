@@ -118,6 +118,7 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_BN_CLICKED(button_startwatch, &CRemoteClientDlg::OnBnClickedstartwatch)
 	ON_WM_TIMER()
 	ON_EN_CHANGE(edit_port, &CRemoteClientDlg::OnEnChangeport)
+	ON_MESSAGE(WM_SEND_PACKET_ACK, &CRemoteClientDlg::OnSendPacketACK)
 END_MESSAGE_MAP()
 
 
@@ -229,6 +230,11 @@ void CRemoteClientDlg::OnBnClickedtest()
 	TRACE("test : result: %d \r\n");
 }
 
+
+LRESULT CRemoteClientDlg::OnSendPacketACK(WPARAM wParam, LPARAM lParam)
+{
+	return LRESULT();
+}
 
 void CRemoteClientDlg::OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult)
 {

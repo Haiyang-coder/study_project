@@ -4,10 +4,13 @@
 
 #pragma once
 #include"StatusDlg.h"
-
-
-
+#ifndef WM_SEND_PACKET_ACK
+#define WM_SEND_PACKET_ACK (WM_USER + 2)	//发送包数据应答
+#endif // !WM_SEND_PACKET_ACK
+#ifndef WM_SEND_PACKET
 #define WM_SEND_PACKET (WM_USER + 1) //发送数据包的消息
+#endif // !WM_SEND_PACKET
+
 
 
 // CRemoteClientDlg 对话框
@@ -54,7 +57,7 @@ public:
 	afx_msg void OnBnClickedtest();
 	DWORD m_serv_ip;
 	CString m_serv_port;
-	
+	afx_msg LRESULT OnSendPacketACK(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnLvnItemchangedList1(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBnClickedfile();
 	CTreeCtrl m_tree;
