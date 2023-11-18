@@ -74,7 +74,7 @@ BOOL CWatchDialog::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	SetTimer(0, 50, NULL);
+	//SetTimer(0, 50, NULL);
 
 	return TRUE;  
 }
@@ -85,29 +85,29 @@ BOOL CWatchDialog::OnInitDialog()
 void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	if (nIDEvent == 0)
-	{
-		CClientController* pParent = (CClientController*)GetParent();
-		if (GetIsFull())
-		{
-			CRect rect;
-			m_picture.GetWindowRect(rect);
-			m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
-				.Width(), rect.Height(), SRCCOPY);
-			//将缓存的图像显示在页面
-			if (m_iObjWidth == -1)
-			{
-				m_iObjWidth = m_image.GetWidth();
-				m_iObhHeight = m_image.GetHeight();
-			}
-			//要对画面进行适配
-			m_picture.InvalidateRect(NULL);
-			m_image.Destroy();
-			SetImageStatus(false);
-			//TRACE("更新图片完成: kuan: d% , 高 : d%\r\n",m_iObjWidth, m_iObhHeight);
-		}
-	}
-	CDialog::OnTimer(nIDEvent);
+	//if (nIDEvent == 0)
+	//{
+	//	CClientController* pParent = (CClientController*)GetParent();
+	//	if (GetIsFull())
+	//	{
+	//		CRect rect;
+	//		m_picture.GetWindowRect(rect);
+	//		m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
+	//			.Width(), rect.Height(), SRCCOPY);
+	//		//将缓存的图像显示在页面
+	//		if (m_iObjWidth == -1)
+	//		{
+	//			m_iObjWidth = m_image.GetWidth();
+	//			m_iObhHeight = m_image.GetHeight();
+	//		}
+	//		//要对画面进行适配
+	//		m_picture.InvalidateRect(NULL);
+	//		m_image.Destroy();
+	//		SetImageStatus(false);
+	//		//TRACE("更新图片完成: kuan: d% , 高 : d%\r\n",m_iObjWidth, m_iObhHeight);
+	//	}
+	//}
+	//CDialog::OnTimer(nIDEvent);
 }
 void CWatchDialog::SetImageStatus(bool isFull)
 {
@@ -125,27 +125,62 @@ CImage& CWatchDialog::getImage()
 
 LRESULT CWatchDialog::OnSendPacketACK(WPARAM wParam, LPARAM lParam)
 {
-	if (lParam == 0)
+	if (lParam == -1 || lParam == -2)
+	{
+		//错误处理
+	}
+	else if(lParam == 1)
+	{
+		//对方关闭了套接字
+	}
+	else
 	{
 		CPacket* pPacket = (CPacket*)wParam;
 		if (pPacket != NULL)
 		{
-			pPacket.
+			switch (pPacket->sCmd)
+			{
+			case 5:
+			{
+				CClientController* pParent = (CClientController*)GetParent();
+			}
+				break;
+			case 6:
+			{
+				if (GetIsFull())
+				{
+					CRect rect;
+					m_picture.GetWindowRect(rect);
+					m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
+						.Width(), rect.Height(), SRCCOPY);
+					//将缓存的图像显示在页面
+					if (m_iObjWidth == -1)
+					{
+						m_iObjWidth = m_image.GetWidth();
+						m_iObhHeight = m_image.GetHeight();
+					}
+					//要对画面进行适配
+					m_picture.InvalidateRect(NULL);
+					m_image.Destroy();
+					SetImageStatus(false);
+				}
+			}
+				
+				break;
+			case 7:
+				break;
+			case 8:
+				break;
+			default:
+				break;
+			}
 		}
 		else 
 		{
 
 		}
 	}
-	else if(lParam < 0)
-	{
-		//错误处理
-	}
-	else
-	{
-		//对方关闭了套接字
-	}
-	return LRESULT();
+	return 0;
 }
 
 void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)

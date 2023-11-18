@@ -82,7 +82,7 @@ void CClientController::threadDownLoadFile()
 {
 	std::list<CPacket> plstPack;
 	CClientSocket* pclientSocket = CClientSocket::getInstance();
-	int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength());
+	int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(),(WPARAM)m_pfile);
 	if (ret < 0)
 	{
 		AfxMessageBox("执行下载命令失败了");
@@ -241,10 +241,10 @@ void CClientController::closeSocket()
 }
 
 
-bool CClientController::SendCommandPacket(HWND hwnd, int nCmd, bool bAutoClose, BYTE* pData, size_t length)
+bool CClientController::SendCommandPacket(HWND hwnd, int nCmd, bool bAutoClose, BYTE* pData, size_t length, WPARAM param)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
-	return pclient->SendPacket(hwnd, CPacket(nCmd, pData, length), bAutoClose);
+	return pclient->SendPacket(hwnd, CPacket(nCmd, pData, length), bAutoClose, param);
 }
 
 
@@ -263,10 +263,11 @@ int CClientController::DownLoadFile(const CString& strPath)
 			m_RemoteDlg.EndWaitCursor();
 			return -1;
 		}
-		std::thread threadDownLoadFile(&CClientController::threadDownLoadFile, this);
+		int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(), (WPARAM)m_pfile);
+		/*std::thread threadDownLoadFile(&CClientController::threadDownLoadFile, this);
 		Sleep(50);
-		threadDownLoadFile.detach();
-		m_threadDownLoadHandle = threadDownLoadFile.native_handle();
+		threadDownLoadFile.detach();*/
+		//m_threadDownLoadHandle = threadDownLoadFile.native_handle();
 		m_RemoteDlg.BeginWaitCursor();
 		m_StatusDlg.ShowWindow(SW_SHOW);
 		m_StatusDlg.m_info.SetWindowTextA("命令正在执行中");
@@ -288,4 +289,11 @@ void CClientController::StartWatchScreen()
 void CClientController::SetScreenClose(bool flag)
 {
 	m_isCLosed = flag;
+}
+
+void CClientController::DownLoadEnd()
+{
+	m_StatusDlg.ShowWindow(SW_HIDE);
+	m_RemoteDlg.EndWaitCursor();
+	m_RemoteDlg.MessageBox("下载完成", "完成");
 }

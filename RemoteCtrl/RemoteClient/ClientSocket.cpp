@@ -379,7 +379,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 					CPacket packet((BYTE*)pbuffer, nLen);
 					if (nLen > 0)
 					{
-						::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(packet), NULL);
+						::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(packet), Data.wParam);
 						if (Data.nMode == CSM_AUTOCLOSE)
 						{
 							//构造数据成功,模式是自动关闭socket的模式
@@ -460,7 +460,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 //	return false;
 //}
 
-bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed)
+bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed, WPARAM param)
 {
 	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
 	{
@@ -472,7 +472,7 @@ bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed
 	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
 	std::string strOut;
 	pack.Data(strOut);
-	return PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode), (LPARAM)hWnd);
+	return PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode, param), (LPARAM)hWnd);
 }
 
 bool CClientSocket::GetFilePath(std::string& strPath)

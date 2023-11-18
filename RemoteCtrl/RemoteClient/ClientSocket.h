@@ -10,6 +10,12 @@
 
 #pragma pack(push)
 #pragma pack(1)
+#ifndef WM_SEND_PACKET_ACK
+#define WM_SEND_PACKET_ACK (WM_USER + 2)	//发送包数据应答
+#endif // !WM_SEND_PACKET_ACK
+#ifndef WM_SEND_PACKET
+#define WM_SEND_PACKET (WM_USER + 1) //发送数据包的消息
+#endif // !WM_SEND_PACKET
 
 class CPacket
 {
@@ -92,7 +98,7 @@ public:
 	bool InitSocketThread();
 	int DealCommand();
 	
-	bool SendPacket(HWND hWnd, const CPacket& pack,  bool isAutoClosed = true);
+	bool SendPacket(HWND hWnd, const CPacket& pack,  bool isAutoClosed = true, WPARAM param = 0);
 	bool GetFilePath(std::string& strPath);
 	bool GetMouseEvent(MOUSEEV& mouse);
 	const CPacket& Getpack();
@@ -112,13 +118,15 @@ private:
 	};
 	typedef struct PacketData
 	{
+		WPARAM wParam;
 		std::string strData;
 		UINT nMode;
-		PacketData(const char* pData, size_t len, UINT mode)
+		PacketData(const char* pData, size_t len, UINT mode, WPARAM nParam = 0)
 		{
 			strData.resize(len);
 			memcpy((char*)strData.c_str(), pData, len);
 			nMode = mode;
+			wParam = nParam;
 		}
 		PacketData(const PacketData& pack)
 		{
@@ -126,6 +134,7 @@ private:
 			{
 				strData = pack.strData;
 				nMode = pack.nMode;
+				wParam = pack.wParam;
 			}
 			
 		}
@@ -136,7 +145,7 @@ private:
 			{
 				strData = pack.strData;
 				nMode = pack.nMode;
-
+				wParam = pack.wParam;
 			}
 			return *this;
 		}

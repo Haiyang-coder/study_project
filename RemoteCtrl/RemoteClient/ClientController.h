@@ -32,10 +32,11 @@ public:
 	void UpdateAddress(int ip, int port);
 	int DealCommand();
 	void closeSocket();
-	bool SendCommandPacket(HWND hwnd/*数据包收到后需要应答的窗口*/, int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0);
+	bool SendCommandPacket(HWND hwnd/*数据包收到后需要应答的窗口*/, int nCmd, bool bAutoClose = true, BYTE* pData = NULL, size_t length = 0, WPARAM param = 0);
 	int DownLoadFile(const CString& strPath);
 	void StartWatchScreen();
 	void SetScreenClose(bool flag);
+	void DownLoadEnd();
 
 protected:
 	CClientController();
