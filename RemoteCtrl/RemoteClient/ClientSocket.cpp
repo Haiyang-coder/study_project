@@ -157,7 +157,16 @@ CClientSocket::CClientSocket():
 		MessageBox(NULL, _T("无法初始化套接字环境"), _T("初始化错误！"), MB_OK | MB_ICONERROR);
 		exit(0);
 	}
-	
+	m_eventInvoke = CreateEvent(NULL, TRUE, FALSE, NULL);
+	std::thread thread1(&CClientSocket::threadEntry, this);
+	m_threadSocket = thread1.native_handle();
+	m_threadSocketID = GetThreadId(m_threadSocket);
+	if (WaitForSingleObject(m_eventInvoke, 100) == WAIT_TIMEOUT)
+	{
+		TRACE("网络消息处理线程启动有问题");
+	}
+	CloseHandle(m_eventInvoke);
+	thread1.detach();
 	if (m_client_sock < 0)
 	{
 		exit(0);
@@ -177,6 +186,7 @@ CClientSocket::CClientSocket():
 		if (m_mapMsgFuction.insert(std::pair<UINT, MSGFUNC>(FuncStruct[i].message, FuncStruct[i].func)).second == false)
 			TRACE("消息函数插入失败\r\n");
 	}
+
 }
 
 CClientSocket::CClientSocket(const CClientSocket& ss)
@@ -223,6 +233,7 @@ BOOL CClientSocket::InitSockEnv()
 void CClientSocket::threadEntry(void* arg)
 {
 	TRACE("==================================================看到这个说明线程被调用了\r\n");
+	
 	CClientSocket* thiz = (CClientSocket*)arg;
 	thiz->threadFuncEx();
 	return;
@@ -231,6 +242,7 @@ void CClientSocket::threadEntry(void* arg)
 
 void CClientSocket::threadFuncEx()
 {
+	SetEvent(m_eventInvoke);
 	MSG msg;
 	while (::GetMessage(&msg,NULL,0 ,0))
 	{
@@ -238,6 +250,7 @@ void CClientSocket::threadFuncEx()
 		DispatchMessage(&msg);
 		if (m_mapMsgFuction.find(msg.message) != m_mapMsgFuction.end())
 		{
+			TRACE("收到消息\r\n ");
 			(this->*m_mapMsgFuction[msg.message])(msg.message, msg.wParam, msg.lParam);
 			
 		}
@@ -356,7 +369,7 @@ bool CClientSocket::Send(const CPacket& pack)
 void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lParam/**/)
 {
 	HWND hWnd = (HWND)lParam;
-	PACKET_DATA Data = *(PACKET_DATA*)wParam;
+	PacketData Data = *(PacketData*)wParam;
 	
 	//TODO我试试不在这里删除这个
 	if (InitSocket() == true)
@@ -384,6 +397,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 						{
 							//构造数据成功,模式是自动关闭socket的模式
 							closeSocket();
+							delete (PacketData*)wParam;
 							return;
 						}
 						//数据已经成功构造,需要整理缓存
@@ -396,6 +410,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 						//缓存区的数据中存在问题,不能解析出数据
 						TRACE("解析包错误\r\n");
 						::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(packet), NULL);
+						delete (PacketData*)wParam;
 						return;
 					}
 				}
@@ -423,7 +438,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 		TRACE("初始化socket失败\r\n");
 		::SendMessage(hWnd, WM_SEND_PACKET_ACK, NULL, NULL);
 	}
-	
+	delete (PacketData*)wParam;
 }
 
 //bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
@@ -464,15 +479,21 @@ bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed
 {
 	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
 	{
-		std::thread thread1(&CClientSocket::threadEntry, this);
+		/*std::thread thread1(&CClientSocket::threadEntry, this);
 		m_threadSocket = thread1.native_handle();
 		m_threadSocketID = GetThreadId(m_threadSocket);
-		thread1.detach();
+		thread1.detach();*/
 	}
 	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
 	std::string strOut;
 	pack.Data(strOut);
-	return PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode, param), (LPARAM)hWnd);
+	PacketData* packData = new PacketData(strOut.c_str(), strOut.size(), nMode, param);
+	BOOL ret =PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)packData, (LPARAM)hWnd);
+	if (ret == FALSE)
+	{
+		delete packData;
+	}
+	return ret;
 }
 
 bool CClientSocket::GetFilePath(std::string& strPath)

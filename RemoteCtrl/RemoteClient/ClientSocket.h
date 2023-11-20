@@ -149,9 +149,9 @@ private:
 			}
 			return *this;
 		}
-	} PACKET_DATA;
+	};
 	
-
+	HANDLE m_eventInvoke;
 	typedef void(CClientSocket::* MSGFUNC)(UINT nMsg, WPARAM wParam, LPARAM lParam);
 	std::map<UINT, MSGFUNC> m_mapMsgFuction;
 	HANDLE m_threadSocket;

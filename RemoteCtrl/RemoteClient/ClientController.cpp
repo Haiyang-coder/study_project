@@ -119,35 +119,31 @@ void CClientController::threadDownLoadFile()
 void CClientController::threadWatchDlg()
 {
 	CClientController* pclient = CClientController::getInstance();
+	ULONGLONG ntick = GetTickCount64();
 	while (!m_isCLosed)
 	{
 		if (m_WatchDlg.GetIsFull() == false)
 		{
-			std::list<CPacket> listPack;
-			int ret = SendCommandPacket(m_WatchDlg.GetSafeHwnd(), 6, true, NULL, 0);
-			//todo:添加消息相应函数WM_send_packet_ack
-			//控制发送频率
-			if (ret == 6)
+			if (GetTickCount64() - ntick < 200)
 			{
+				Sleep(200 - (GetTickCount64() - ntick));
 				
-				if (CRemteClientTool::Byte2Image(m_WatchDlg.getImage(), listPack.front().strData) == 0)
-				{
-					m_WatchDlg.SetImageStatus(true);
-				}
-				else
-				{
-					TRACE("获取图片失败 ret = %d\r\n", ret);
-				}
-
+			}
+			ntick = GetTickCount64();
+			int ret = SendCommandPacket(m_WatchDlg.GetSafeHwnd(), 6, true, NULL, 0);
+			if (ret == 1)
+			{
+				TRACE("发送成功\r\n");
 			}
 			else
 			{
-				Sleep(10);
+				TRACE("发送失败，继续发送\r\n");
 			}
 		}
 		else {
-			Sleep(1);
+			Sleep(10);
 		}
+
 	}
 }
 
@@ -244,7 +240,8 @@ void CClientController::closeSocket()
 bool CClientController::SendCommandPacket(HWND hwnd, int nCmd, bool bAutoClose, BYTE* pData, size_t length, WPARAM param)
 {
 	CClientSocket* pclient = CClientSocket::getInstance();
-	return pclient->SendPacket(hwnd, CPacket(nCmd, pData, length), bAutoClose, param);
+	bool ret = pclient->SendPacket(hwnd, CPacket(nCmd, pData, length), bAutoClose, param);
+	return ret;
 }
 
 

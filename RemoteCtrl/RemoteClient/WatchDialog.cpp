@@ -147,23 +147,15 @@ LRESULT CWatchDialog::OnSendPacketACK(WPARAM wParam, LPARAM lParam)
 				break;
 			case 6:
 			{
-				if (GetIsFull())
-				{
-					CRect rect;
-					m_picture.GetWindowRect(rect);
-					m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
-						.Width(), rect.Height(), SRCCOPY);
-					//将缓存的图像显示在页面
-					if (m_iObjWidth == -1)
-					{
-						m_iObjWidth = m_image.GetWidth();
-						m_iObhHeight = m_image.GetHeight();
-					}
-					//要对画面进行适配
-					m_picture.InvalidateRect(NULL);
-					m_image.Destroy();
-					SetImageStatus(false);
-				}
+				CRemteClientTool::Byte2Image(m_image, pPacket->strData);
+				CRect rect;
+				m_picture.GetWindowRect(rect);
+				m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, rect
+					.Width(), rect.Height(), SRCCOPY);
+				//将缓存的图像显示在页面
+				m_picture.InvalidateRect(NULL);
+				m_image.Destroy();
+				SetImageStatus(false);
 			}
 				
 				break;
