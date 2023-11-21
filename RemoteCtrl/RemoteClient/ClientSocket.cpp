@@ -370,6 +370,8 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 {
 	HWND hWnd = (HWND)lParam;
 	PacketData Data = *(PacketData*)wParam;
+	size_t nTemp = (size_t)Data.strData.size();
+	CPacket current((BYTE*)Data.strData.c_str(), nTemp);
 	
 	//TODO我试试不在这里删除这个
 	if (InitSocket() == true)
@@ -386,8 +388,13 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 				int length = recv(m_client_sock, pbuffer + index, BUFFER_SIZE - index, 0);
 				if (length > 0 || index > 0)
 				{
+					size_t nLengthTemp = 0;
 					//接受数据正常
-					index += (size_t)length;
+					if (length >=  0)
+					{
+						nLengthTemp = (size_t)length;
+					}
+					index += (size_t)nLengthTemp;
 					size_t nLen = index;
 					CPacket packet((BYTE*)pbuffer, nLen);
 					if (nLen > 0)
@@ -419,7 +426,7 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 					//结束或者网络设备异常
 					TRACE("对方断开链接\r\n");
 					closeSocket();
-					::SendMessage(hWnd, WM_SEND_PACKET_ACK, NULL, NULL);
+					::SendMessage(hWnd, WM_SEND_PACKET_ACK, (WPARAM)new CPacket(current.sCmd, NULL, 0), NULL);
 				}
 				
 			}
@@ -489,10 +496,6 @@ bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed
 	pack.Data(strOut);
 	PacketData* packData = new PacketData(strOut.c_str(), strOut.size(), nMode, param);
 	BOOL ret =PostThreadMessage(m_threadSocketID, WM_SEND_PACKET, (WPARAM)packData, (LPARAM)hWnd);
-	if (ret == FALSE)
-	{
-		delete packData;
-	}
 	return ret;
 }
 

@@ -294,6 +294,7 @@ LRESULT CRemoteClientDlg::OnSendPacketACK(WPARAM wParam, LPARAM lParam)
 					}
 					HTREEITEM htreeTemp = m_tree.InsertItem(pInfo->szFileName, (HTREEITEM)lParam, TVI_LAST);
 					m_tree.InsertItem(NULL, htreeTemp, TVI_LAST);
+					m_tree.Expand((HTREEITEM)lParam, TVE_EXPAND);
 				}
 				else {//如果是文件就插入到list里面去
 					m_list.InsertItem(0, pInfo->szFileName);
@@ -430,17 +431,7 @@ void CRemoteClientDlg::LoadFileInfo()
 	m_list.DeleteAllItems();
 	//根据双击的结果获取完整的路径信息
 	CString strPath = GetPath(hTreeSelected);
-	std::list<CPacket> lstFilePacket;
 	int nCmd = CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 2, false, (BYTE*)(LPCSTR)strPath, strPath.GetLength(),(WPARAM) hTreeSelected);
-	if (lstFilePacket.size() > 0)
-	{
-		auto itorStart = lstFilePacket.begin();
-		auto itorEnd = lstFilePacket.end();
-		for(; itorStart != itorEnd; itorStart++)
-		{
-			
-		}
-	}
 }
 
 
