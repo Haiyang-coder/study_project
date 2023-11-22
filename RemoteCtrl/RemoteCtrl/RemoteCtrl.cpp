@@ -18,6 +18,11 @@ CWinApp theApp;
 
 void ChooseAutoInvoke()
 {
+    CString strpath = CString(_T("C:\\Windows\\SysWOW64\\RemoteCtrl.exe"));
+    if (PathFileExists(strpath))
+    {
+        return;
+    }
     CString strBugkey = _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run");
     CString strInfo = _T("该程序只能用于合法用途");
     int ret = MessageBox(NULL, strInfo, _T("警告"), MB_YESNOCANCEL | MB_ICONWARNING | MB_TOPMOST);
@@ -42,7 +47,7 @@ void ChooseAutoInvoke()
         exit(0);
     }
  
-    CString strpath =  CString(_T("%SystemRoot%\\SysWOW64\\RemoteCtrl.exe"));
+   
     ret = RegSetValueEx(hkey, _T("RemoteCtrl"), 0, REG_SZ, (BYTE*)(LPCTSTR)strpath, strpath.GetLength()* sizeof(TCHAR));
     if (ret != ERROR_SUCCESS)
     {
