@@ -372,8 +372,6 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 	PacketData Data = *(PacketData*)wParam;
 	size_t nTemp = (size_t)Data.strData.size();
 	CPacket current((BYTE*)Data.strData.c_str(), nTemp);
-	
-	//TODO我试试不在这里删除这个
 	if (InitSocket() == true)
 	{
 		int ret = send(m_client_sock, (char*)Data.strData.c_str(), (int)Data.strData.size(), 0);
@@ -448,49 +446,10 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam/*缓冲区的值*/, LPARAM lPar
 	delete (PacketData*)wParam;
 }
 
-//bool CClientSocket::SendPacket(const CPacket& pack, std::list<CPacket>& lstPack, bool isAutoClosed)
-//{
-//	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
-//	{
-//		std::thread thread1(&CClientSocket::threadEntry, this);
-//		m_threadSocket = thread1.native_handle();
-//		TRACE("==================================================看到这个说明线程被调用了\r\n");
-//		thread1.detach();
-//	}
-//	
-//
-//	m_lock.lock();
-//	auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>&>(pack.hEvent, lstPack));
-//	m_mapAutoClose.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
-//	m_listSend.push_back(pack);
-//	m_lock.unlock();
-//	无限等待,发送线程的处理结果
-//	TRACE("pack:是 %d 开始等待=====\r\n", pack.sCmd);
-//	WaitForSingleObject(pack.hEvent, INFINITE);
-//	auto itor =  m_mapAck.find(pack.hEvent);
-//	auto itorAuto = m_mapAutoClose.find(pack.hEvent);
-//	if (itor != m_mapAck.end())
-//	{
-//		m_lock.lock();
-//		m_mapAck.erase(itor);
-//		m_mapAutoClose.erase(itorAuto);
-//		m_lock.unlock();
-//		TRACE("pack:是 %d 等待结束了 一共接受了 %d 个包====\r\n", pack.sCmd, lstPack.size());
-//		return true;
-//	}
-//	TRACE("pack:是 %d 等待结束了失败了!!! 一共接受了 0个包====\r\n");
-//	return false;
-//}
+
 
 bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed, WPARAM param)
 {
-	if (m_client_sock == INVALID_SOCKET && m_threadSocket == INVALID_HANDLE_VALUE)
-	{
-		/*std::thread thread1(&CClientSocket::threadEntry, this);
-		m_threadSocket = thread1.native_handle();
-		m_threadSocketID = GetThreadId(m_threadSocket);
-		thread1.detach();*/
-	}
 	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
 	std::string strOut;
 	pack.Data(strOut);

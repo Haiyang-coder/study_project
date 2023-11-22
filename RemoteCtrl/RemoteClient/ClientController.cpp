@@ -17,7 +17,6 @@ CClientController::~CClientController()
 	m_nthreadId = -1;
 	m_threadHandle = INVALID_HANDLE_VALUE;
 	m_threadWatchHandle = INVALID_HANDLE_VALUE;
-	m_threadDownLoadHandle = INVALID_HANDLE_VALUE;
 	TRACE("CClientController over \r\n");
 }
 void CClientController::releaseInstance()
@@ -78,44 +77,7 @@ unsigned _stdcall CClientController::threadFuncEntry(void* arg)
 	_endthreadex(0);
 	return 0;
 }
-void CClientController::threadDownLoadFile()
-{
-	std::list<CPacket> plstPack;
-	CClientSocket* pclientSocket = CClientSocket::getInstance();
-	int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(),(WPARAM)m_pfile);
-	if (ret < 0)
-	{
-		AfxMessageBox("执行下载命令失败了");
-		TRACE("下载失败：%d\r\n", ret);
-		fclose(m_pfile);
-		m_StatusDlg.ShowWindow(SW_HIDE);
-		m_RemoteDlg.EndWaitCursor();
-		return;
-	}
-	long long nCount = 0;
-	long long nLenth = *(long long*)pclientSocket->Getpack().strData.c_str();
-	while (nCount < nLenth)
-	{
-		//开始接收服务端发过来的文件信息
-		ret = pclientSocket->DealCommand();
-		if (ret < 0)
-		{
-			AfxMessageBox("文件传输失败，请重试");
-			TRACE("文件传输失败：%d\r\n", ret);
-			break;
-		}
-		fwrite(pclientSocket->Getpack().strData.c_str(), 1, pclientSocket->Getpack().strData.size(), m_pfile);
-		nCount += pclientSocket->Getpack().strData.size();
 
-	}
-	fclose(m_pfile);
-	pclientSocket->closeSocket();
-	m_StatusDlg.ShowWindow(SW_HIDE);
-	m_RemoteDlg.EndWaitCursor();
-	m_RemoteDlg.MessageBox(_T("下载完成"), _T("完成"));
-	return;
-	
-}
 void CClientController::threadWatchDlg()
 {
 	CClientController* pclient = CClientController::getInstance();
@@ -192,33 +154,9 @@ int CClientController::Invoke(CWnd*& pMainWnd)
 
 int CClientController::InitController()
 {
-	//这里我尝试用c++的线程实现
-	//std::thread threadController = std::thread(&CClientController::threadFuncEntry, this);
-	//m_threadHandle = threadController.native_handle();
-	//m_nthreadId = GetThreadId(m_threadHandle);
-
-	//m_StatusDlg.Create(dlg_status, &m_RemoteDlg);
-	//threadController.detach();
 	m_threadHandle = (HANDLE)_beginthreadex(NULL, 0, &CClientController::threadFuncEntry, this, 0, &m_nthreadId);
 	m_StatusDlg.Create(dlg_status, &m_RemoteDlg);
 	return 0;
-}
-
-LRESULT CClientController::SendMessage(MSG msg)
-{
-	//创建了一个事件，目的是等线程完成了任务，可以通过事件反馈给事件的发送者
-	HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (hEvent == INVALID_HANDLE_VALUE)
-	{
-		return -2;
-	}
-	//创建了一个消息结构体，包括了给线程的参数和执行后的结果（线程填写的）
-	MsgInfo info(msg);
-	PostThreadMessage(m_nthreadId, WM_SEND_MESSAGE, (WPARAM)&info, (LPARAM)hEvent);
-	//通过事件通知消息发送者完成了处理
-	WaitForSingleObject(hEvent, INFINITY);
-	CloseHandle(hEvent);
-	return info.result;
 }
 
 void CClientController::UpdateAddress(int ip, int port)
@@ -261,10 +199,6 @@ int CClientController::DownLoadFile(const CString& strPath)
 			return -1;
 		}
 		int ret = SendCommandPacket(m_RemoteDlg.GetSafeHwnd(), 4, false, (BYTE*)(LPCSTR)m_strFileRemotePath, m_strFileRemotePath.GetLength(), (WPARAM)m_pfile);
-		/*std::thread threadDownLoadFile(&CClientController::threadDownLoadFile, this);
-		Sleep(50);
-		threadDownLoadFile.detach();*/
-		//m_threadDownLoadHandle = threadDownLoadFile.native_handle();
 		m_RemoteDlg.BeginWaitCursor();
 		m_StatusDlg.ShowWindow(SW_SHOW);
 		m_StatusDlg.m_info.SetWindowTextA("命令正在执行中");

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "afxdialogex.h"
+#include<string>
 
 
 // CStatusDlg 对话框

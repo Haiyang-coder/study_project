@@ -70,7 +70,9 @@ public:
 	afx_msg void Ondeletefile();
 	afx_msg void Onopenfile();
 private:
-	
+	void Str2tree(const std::string& driver, CTreeCtrl& tree);
+	void UpdateFileInfo(const struct file_info finfo, HTREEITEM lParam);
+	void UpdateDownLoadFile(const std::string& strData, FILE* pFile);
 
 public:
 	afx_msg void OnBnClickedButton1();

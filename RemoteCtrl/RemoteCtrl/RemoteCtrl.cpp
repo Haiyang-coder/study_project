@@ -12,13 +12,48 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
-
 // 唯一的应用程序对象 这是fiest的代码
 
 CWinApp theApp;
 
+void ChooseAutoInvoke()
+{
+    CString strBugkey = _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run");
+    CString strInfo = _T("该程序只能用于合法用途");
+    int ret = MessageBox(NULL, strInfo, _T("警告"), MB_YESNOCANCEL | MB_ICONWARNING | MB_TOPMOST);
+    if (ret != IDOK)
+    {
+        exit(0);
+    }
+    char sPath[MAX_PATH] = "";
+    char sSys[MAX_PATH] = "";
+    std::string strExe = "\\RemoteCtrl.exe ";
+    GetCurrentDirectoryA(MAX_PATH, sPath);
+    GetSystemDirectoryA(sSys, sizeof(sSys));
+    std::string strCmd = "mklink " + std::string(sSys) + strExe + std::string(sPath) + strExe;
+    ret = system(strCmd.c_str());
+    TRACE("ret system = %d \r\n", ret);
+    HKEY hkey = NULL;
+    ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, strBugkey, 0, KEY_ALL_ACCESS | KEY_WOW64_64KEY, &hkey);
+    if (ret != ERROR_SUCCESS)
+    {
+        RegCloseKey(hkey);
+        MessageBox(NULL, _T("设置自动开机启动失败，是否权限不足 \r\n 程序启动失败!"), _T("错误"), MB_ICONERROR | MB_TOPMOST);
+        exit(0);
+    }
+ 
+    CString strpath =  CString(_T("%SystemRoot%\\SysWOW64\\RemoteCtrl.exe"));
+    ret = RegSetValueEx(hkey, _T("RemoteCtrl"), 0, REG_SZ, (BYTE*)(LPCTSTR)strpath, strpath.GetLength()* sizeof(TCHAR));
+    if (ret != ERROR_SUCCESS)
+    {
+        RegCloseKey(hkey);
+        MessageBox(NULL, _T("设置自动开机启动失败，是否权限不足 \r\n 程序启动失败!"), _T("错误"), MB_ICONERROR | MB_TOPMOST);
+        exit(0);
+    }
+    RegCloseKey(hkey);
 
+   
+}
 
 
 
@@ -43,6 +78,7 @@ int main()
         {
             // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
             CCommand command;
+            ChooseAutoInvoke();
             CSeverSocket* pserver = CSeverSocket::getInstance();
             int ret = pserver->RunFunc(&CCommand::RunCommand, &command);
             switch (ret)

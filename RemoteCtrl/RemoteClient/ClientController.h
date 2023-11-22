@@ -28,7 +28,6 @@ public:
 	//初始化
 	int InitController();
 	//发送消息
-	LRESULT SendMessage(MSG msag);
 	void UpdateAddress(int ip, int port);
 	int DealCommand();
 	void closeSocket();
@@ -45,7 +44,6 @@ protected:
 private:
 	void threadFunc();
 	static unsigned _stdcall threadFuncEntry(void* arg);
-	void threadDownLoadFile();
 	void threadWatchDlg();
 
 private:
@@ -94,7 +92,6 @@ private:
 	typedef LRESULT(CClientController::* MSGFUNC)(UINT msg, WPARAM wParam, LPARAM lParam);
 	static std::map<UINT, MSGFUNC> m_mapFunc;
 	HANDLE m_threadHandle;
-	HANDLE m_threadDownLoadHandle;
 	HANDLE m_threadWatchHandle;
 	bool m_isCLosed = true;//这是远程监控显示界面
 	unsigned int m_nthreadId;
