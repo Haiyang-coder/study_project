@@ -15,6 +15,38 @@
 // 唯一的应用程序对象 这是fiest的代码
 
 CWinApp theApp;
+bool isAdmin() 
+{
+    HANDLE hToken = NULL;
+    if (!OpenProcessToken(GetCurrentProcess, TOKEN_QUERY, &hToken))
+    {
+        showError;
+        return false;
+    }
+    TOKEN_ELEVATION eve;
+    DWORD len = 0;
+    if (GetTokenInformation(hToken, TokenElevation, &eve, sizeof(eve), &len) == FALSE)
+    {
+        showError;
+        return false;
+    }
+    if (len == sizeof(eve))
+    {
+        CloseHandle(hToken);
+        return eve.TokenIsElevated;
+    }
+    printf("length of tokeninfomation is %d\r\n");
+    return false;
+}
+void showError()
+{
+    LPWSTR lpMEessageBuf = NULL;
+    //strerror(errno)://标准c语言库
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMEessageBuf, 0, NULL);
+    OutputDebugString(lpMEessageBuf);
+    LocalFree(lpMEessageBuf);
+    exit(0);
+}
 void WriteRegisterTable(const CString& strPath)
 {
     int ret = 0;
@@ -85,6 +117,14 @@ void ChooseAutoInvoke()
 
 int main()
 {
+    if (isAdmin())
+    {
+        TRACE("current is run ia administrator!\r\n");
+    }
+    else
+    {
+        TRACE("current is run is a normal user!\r\n");
+    }
     int nRetCode = 0;
     HMODULE hModule = ::GetModuleHandle(nullptr);
     std::cout << "hello word \n" << std::endl;
