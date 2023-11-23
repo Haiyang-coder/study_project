@@ -8,6 +8,8 @@
 #include<Windows.h>
 #include"RemteServerTool.h"
 #include"Command.h"
+#include<thread>
+#include<conio.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -112,63 +114,119 @@ void ChooseAutoInvoke()
     WriteStartUpDir(strPathStartup);
    
 }
+void RunAdmin()
+{
+    HANDLE hToken = NULL;
+    BOOL ret = LogonUser(_T("Administrator"), NULL, NULL, LOGON32_LOGON_BATCH, LOGON32_PROVIDER_DEFAULT,&hToken);
+    if (!ret)
+    {
+        showError();
+        exit(0);
+    }
+    OutputDebugString(L"logon admin success\r\n");
+    STARTUPINFO si = {0};
+    PROCESS_INFORMATION pi = { 0 };
+    TCHAR sPath[MAX_PATH] = _T("");
+    GetCurrentDirectory(MAX_PATH, sPath);
+    CString strCmd = sPath;
+    strCmd += _T("RemoteCtrl.exe");
+    //ret = CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, NULL, (LPWSTR)(LPCWSTR)strCmd, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &si, &pi);
+    ret = CreateProcessWithLogonW(_T("Administrator"), NULL, NULL, LOGON_WITH_PROFILE,NULL, (LPWSTR)(LPCWSTR)strCmd, CREATE_UNICODE_ENVIRONMENT, NULL,NULL, &si, &pi);
+    if (!ret)
+    {
+        showError();
+        TRACE("创建进程失败");
+    }
+    WaitForSingleObject(pi.hProcess, INFINITY);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+}
 
+bool Init()
+{
+    HMODULE hModule = ::GetModuleHandle(nullptr);
+    if (hModule == nullptr)
+    {
+        wprintf(L"错误: GetModuleHandle 失败\n");
+        return false;
+    }
+    if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
+    {
+        // TODO: 在此处为应用程序的行为编写代码。
+        wprintf(L"错误: MFC 初始化失败\n");
+        return false;
+    }
+}
+void threadQueue(HANDLE hIocp)
+{
+    std::list<std::string> lstString;
+    DWORD dwTrance = 0;
+    ULONG_PTR completionKey = 0;
+    OVERLAPPED* pOverlappend = NULL;
+    while (GetQueuedCompletionStatus(hIocp, &dwTrance, &completionKey, &pOverlappend, INFINITE))
+    {
+        if (dwTrance == 0 && completionKey == NULL)
+        {
+            break;
+        }
+    }
+}
 
 
 int main()
 {
-    if (isAdmin())
+   
+    if (!Init())
     {
-        TRACE("current is run ia administrator!\r\n");
+        return 1;
     }
-    else
+    HANDLE hIOCP = INVALID_HANDLE_VALUE;
+    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
+   
+    std::thread thrad1(threadQueue, hIOCP);
+    getchar();
+    while (_kbhit() != 0)
     {
-        TRACE("current is run is a normal user!\r\n");
+        PostQueuedCompletionStatus(hIOCP, 0, NULL, NULL);
     }
-    int nRetCode = 0;
-    HMODULE hModule = ::GetModuleHandle(nullptr);
-    std::cout << "hello word \n" << std::endl;
-    std::cout << std::flush;
+    if (hIOCP != NULL)
+    {
+        //todo:唤醒完成端口
+        
+        if (thrad1.joinable())
+        {
+            thrad1.join();
+        }
+    }
+    CloseHandle(hIOCP);
+    TRACE("exit done!\r\n");
 
+    //if (isAdmin())
+    //{
+    //    
+    //    TRACE("current is run ia administrator!\r\n");
+    //}
+    //else
+    //{
+    //    //RunAdmin();
+    //    TRACE("current is run is a normal user!\r\n");
+    //}
+    //CCommand command;
+    ////ChooseAutoInvoke();
+    //CSeverSocket* pserver = CSeverSocket::getInstance();
+    //int ret = pserver->RunFunc(&CCommand::RunCommand, &command);
+    //switch (ret)
+    //{
+    //case -1:
+    //    MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
+    //    exit(0);
+    //    break;
+    //case -2:
+    //    MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
+    //    exit(0);
+    //    break;
+    //default:
+    //    break;
+    //}
     
-    if (hModule != nullptr)
-    {
-        // 初始化 MFC 并在失败时显示错误
-        if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
-        {
-            // TODO: 在此处为应用程序的行为编写代码。
-            wprintf(L"错误: MFC 初始化失败\n");
-            nRetCode = 1;
-        }
-        else
-        {
-            // TODO: 在此处为应用程序的行为编写代码。sadasdjhi
-            CCommand command;
-            //ChooseAutoInvoke();
-            CSeverSocket* pserver = CSeverSocket::getInstance();
-            int ret = pserver->RunFunc(&CCommand::RunCommand, &command);
-            switch (ret)
-            {
-            case -1:
-                MessageBox(NULL, _T("Init socket error"), _T("Init socket failed"), MB_OK | MB_ICONERROR);
-                exit(0);
-                break;
-            case -2:
-                MessageBox(NULL, _T("try three times error"), _T("try three times failed"), MB_OK | MB_ICONERROR);
-                exit(0);
-                break;
-            default:
-                break;
-            }
-
-        }
-    }
-    else
-    {
-        // TODO: 更改错误代码以符合需要
-        wprintf(L"错误: GetModuleHandle 失败\n");
-        nRetCode = 1;
-    }
-
-    return nRetCode;
 }

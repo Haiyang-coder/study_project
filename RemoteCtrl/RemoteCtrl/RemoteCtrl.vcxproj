@@ -150,6 +150,7 @@
     <ClInclude Include="RemoteCtrl.h" />
     <ClInclude Include="RemteServerTool.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SafeQueue.h" />
     <ClInclude Include="SeverSocket.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -165,6 +166,7 @@
     </ClCompile>
     <ClCompile Include="RemoteCtrl.cpp" />
     <ClCompile Include="RemteServerTool.cpp" />
+    <ClCompile Include="SafeQueue.cpp" />
     <ClCompile Include="SeverSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
