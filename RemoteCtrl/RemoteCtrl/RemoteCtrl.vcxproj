@@ -166,7 +166,6 @@
     </ClCompile>
     <ClCompile Include="RemoteCtrl.cpp" />
     <ClCompile Include="RemteServerTool.cpp" />
-    <ClCompile Include="SafeQueue.cpp" />
     <ClCompile Include="SeverSocket.cpp" />
   </ItemGroup>
   <ItemGroup>

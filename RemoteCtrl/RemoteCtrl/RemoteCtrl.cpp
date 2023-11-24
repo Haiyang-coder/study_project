@@ -10,6 +10,7 @@
 #include"Command.h"
 #include<thread>
 #include<conio.h>
+#include"SafeQueue.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -17,19 +18,28 @@
 // 唯一的应用程序对象 这是fiest的代码
 
 CWinApp theApp;
+void showError()
+{
+    LPWSTR lpMEessageBuf = NULL;
+    //strerror(errno)://标准c语言库
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMEessageBuf, 0, NULL);
+    OutputDebugString(lpMEessageBuf);
+    LocalFree(lpMEessageBuf);
+    exit(0);
+}
 bool isAdmin() 
 {
     HANDLE hToken = NULL;
     if (!OpenProcessToken(GetCurrentProcess, TOKEN_QUERY, &hToken))
     {
-        showError;
+        showError();
         return false;
     }
     TOKEN_ELEVATION eve;
     DWORD len = 0;
     if (GetTokenInformation(hToken, TokenElevation, &eve, sizeof(eve), &len) == FALSE)
     {
-        showError;
+        showError();
         return false;
     }
     if (len == sizeof(eve))
@@ -40,15 +50,7 @@ bool isAdmin()
     printf("length of tokeninfomation is %d\r\n");
     return false;
 }
-void showError()
-{
-    LPWSTR lpMEessageBuf = NULL;
-    //strerror(errno)://标准c语言库
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMEessageBuf, 0, NULL);
-    OutputDebugString(lpMEessageBuf);
-    LocalFree(lpMEessageBuf);
-    exit(0);
-}
+
 void WriteRegisterTable(const CString& strPath)
 {
     int ret = 0;
@@ -157,20 +159,7 @@ bool Init()
         return false;
     }
 }
-void threadQueue(HANDLE hIocp)
-{
-    std::list<std::string> lstString;
-    DWORD dwTrance = 0;
-    ULONG_PTR completionKey = 0;
-    OVERLAPPED* pOverlappend = NULL;
-    while (GetQueuedCompletionStatus(hIocp, &dwTrance, &completionKey, &pOverlappend, INFINITE))
-    {
-        if (dwTrance == 0 && completionKey == NULL)
-        {
-            break;
-        }
-    }
-}
+
 
 
 int main()
@@ -180,27 +169,30 @@ int main()
     {
         return 1;
     }
-    HANDLE hIOCP = INVALID_HANDLE_VALUE;
-    hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
    
-    std::thread thrad1(threadQueue, hIOCP);
-    getchar();
+    CSafeQueue<std::string> lstStrings;
+    ULONGLONG tick0 = GetTickCount64();
+    ULONGLONG tick1 = GetTickCount64();
+
     while (_kbhit() != 0)
     {
-        PostQueuedCompletionStatus(hIOCP, 0, NULL, NULL);
-    }
-    if (hIOCP != NULL)
-    {
-        //todo:唤醒完成端口
-        
-        if (thrad1.joinable())
+        if (GetTickCount64() - tick0 > 1300)
         {
-            thrad1.join();
+            lstStrings.PushBack("hello world ");
+            tick0 = GetTickCount64();
         }
+        if (GetTickCount64() - tick1 > 2000)
+        {
+            std::string str;
+            lstStrings.PopFront(str);
+            tick1 = GetTickCount64();
+        }
+        Sleep(1);
     }
-    CloseHandle(hIOCP);
+    lstStrings.Clear();
+    
     TRACE("exit done!\r\n");
-
+    exit(0);
     //if (isAdmin())
     //{
     //    
