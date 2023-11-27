@@ -11,6 +11,7 @@
 #include<thread>
 #include<conio.h>
 #include"SafeQueue.h"
+#include<MSWSock.h> 
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -195,11 +196,10 @@ void test()
 int main()
 {
    
-    if (!Init())
-    {
-        return 1;
-    }
-    test();
+    //if (!Init())
+    //{
+    //    return 1;
+    //}
 
 
     //if (isAdmin())

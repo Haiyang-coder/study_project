@@ -48,6 +48,18 @@
     <ClInclude Include="SafeQueue.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadWorker.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadFuncBase.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IOCPServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RemoteCtrl.cpp">
@@ -69,6 +81,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Packet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadWorker.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadFuncBase.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
