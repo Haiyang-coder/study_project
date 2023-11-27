@@ -90,11 +90,16 @@ inline CSafeQueue<T>::~CSafeQueue()
 		return;
 	}
 	m_lock = true;
-	HANDLE tem = m_hCompleoetionPort;
+	
 	PostQueuedCompletionStatus(m_hCompleoetionPort, 0, NULL, NULL);
 	WaitForSingleObject(m_hThread, INFINITE);
-	m_hCompleoetionPort = NULL;
-	CloseHandle(tem);
+	if (m_hCompleoetionPort != NULL)
+	{
+		HANDLE tem = m_hCompleoetionPort;
+		m_hCompleoetionPort = NULL;
+		CloseHandle(tem);
+	}
+		
 }
 
 template<class T>
@@ -212,8 +217,10 @@ inline void CSafeQueue<T>::threadMain(HANDLE arg)
 		IocpParam* pParam = (IocpParam*)CompletionKey;
 		DealParam(pParam);
 	}
+	HANDLE temp = m_hCompleoetionPort;
+	m_hCompleoetionPort = NULL;
+	CloseHandle(temp);
 	
-	CloseHandle(m_hCompleoetionPort);
 }
 
 template<class T>

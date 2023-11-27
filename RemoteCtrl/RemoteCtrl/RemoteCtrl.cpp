@@ -159,7 +159,37 @@ bool Init()
         return false;
     }
 }
+void test()
+{
+    CSafeQueue<std::string> lstStrings;
+    ULONGLONG tick0 = GetTickCount64();
+    ULONGLONG tick1 = GetTickCount64();
+    ULONGLONG ticktoal = GetTickCount64();
+    int count = 0;
 
+    while (true)
+    {
+        if (count++ >= 10000)
+        {
+            break;
+        }
+        if (GetTickCount64() - tick0 > 13)
+        {
+            lstStrings.PushBack("hello world ");
+            tick0 = GetTickCount64();
+        }
+        if (GetTickCount64() - tick1 > 20)
+        {
+            std::string str;
+            lstStrings.PopFront(str);
+            TRACE("str is = %s\r\n", str.c_str());
+            tick1 = GetTickCount64();
+        }
+        Sleep(1);
+    }
+    lstStrings.Clear();
+    
+}
 
 
 int main()
@@ -169,30 +199,9 @@ int main()
     {
         return 1;
     }
-   
-    CSafeQueue<std::string> lstStrings;
-    ULONGLONG tick0 = GetTickCount64();
-    ULONGLONG tick1 = GetTickCount64();
+    test();
 
-    while (_kbhit() != 0)
-    {
-        if (GetTickCount64() - tick0 > 1300)
-        {
-            lstStrings.PushBack("hello world ");
-            tick0 = GetTickCount64();
-        }
-        if (GetTickCount64() - tick1 > 2000)
-        {
-            std::string str;
-            lstStrings.PopFront(str);
-            tick1 = GetTickCount64();
-        }
-        Sleep(1);
-    }
-    lstStrings.Clear();
-    
-    TRACE("exit done!\r\n");
-    exit(0);
+
     //if (isAdmin())
     //{
     //    
