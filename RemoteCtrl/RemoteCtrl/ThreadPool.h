@@ -2,16 +2,20 @@
 #include"ThreadWorker.h"
 #include<vector>
 #include<mutex>
+
+
+
 class CThreadRemote
 {
 public:
 	CThreadRemote();
 	~CThreadRemote();
+	CThreadRemote(const CThreadRemote&);
 
 	bool boolIsValid();
 	bool Start();
 	bool Stop();
-	void UpdateWorker(const CThreadWorker& woker = CThreadWorker());
+	void UpdateWorker(const CThreadWorker& woker  = CThreadWorker());
 	bool Isdle();
 private:
 	static void TheadEntry(void* arg);
@@ -24,7 +28,7 @@ protected:
 private:
 	HANDLE m_hThread;
 	bool m_bStatus;//true: 线程正在运行  false:线程将要关闭
-	std::atomic<CThreadWorker> m_worker;
+	std::atomic<CThreadWorker*> m_pWorker;
 };
 
 
@@ -42,7 +46,7 @@ public:
 	bool CheckThreadValid(int index);
 
 private:
-	std::vector<CThreadRemote> m_vecThead;
+	std::vector<CThreadRemote*> m_vecThead;
 	std::mutex m_lock;
 
 };

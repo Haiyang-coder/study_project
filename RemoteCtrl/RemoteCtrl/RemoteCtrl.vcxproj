@@ -155,10 +155,10 @@
     <ClInclude Include="SafeQueue.h" />
     <ClInclude Include="SeverSocket.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="ThreadFuncBase.h" />
     <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="ThreadWorker.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="Command.cpp" />
@@ -172,7 +172,6 @@
     <ClCompile Include="RemoteCtrl.cpp" />
     <ClCompile Include="RemteServerTool.cpp" />
     <ClCompile Include="SeverSocket.cpp" />
-    <ClCompile Include="ThreadFuncBase.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,30 +1,24 @@
 #pragma once
-#include"ThreadFuncBase.h"
 #include"ThreadPool.h"
-#include<Windows.h>
 #include<map>
-#include<winsock2.h>
 #include<string>
+#include<WinSock2.h>
+#include"SafeQueue.h"
+#include<MSWSock.h>
 
-
-class ShkClient
-{
-public:
-	ShkClient();
-	~ShkClient();
-
-private:
-
-};
+class ShkClient;
+typedef std::shared_ptr<ShkClient> PCLIENT;
 
 enum OPERATOR
 {
     ENone,
     EAccept,
     ERecv,
-    ESedn,
+    ESend,
     EError
 };
+class CIOCPServer;
+
 class ShkOverlapped
 {
 public:
@@ -35,78 +29,118 @@ public:
     OPERATOR m_operator;
     std::vector<char> m_buffer;
     CThreadWorker m_woker;
-
-private:
+    CIOCPServer* m_server;//服务器对象
+    
 
 };
 
 
 
+template<OPERATOR>
+class AcceptOverlapped :public ShkOverlapped, CTheadFuncBase
+{
+public:
+    AcceptOverlapped(PCLIENT& client);
+    AcceptOverlapped();
+    int AcceptWorker();
+    
+public:
+    PCLIENT m_client;
+};
+typedef AcceptOverlapped<EAccept> ACCEPTOVERLAPPED;
+
+template<OPERATOR>
+class RecvOverlapped :public ShkOverlapped, CTheadFuncBase
+{
+public:
+    RecvOverlapped() :m_operator(ERecv), m_woker(this, &RecvOverlapped::RecvWorker)
+    {
+        memset(&m_overlapped, 0, sizeof(m_overlapped));
+        m_buffer.resize(1024 * 256);
+    }
+    int  RecvWorker()
+    {
+    }
+};
+typedef RecvOverlapped<ERecv> RECVOVERLAPPED;
+
+template<OPERATOR>
+class SendOverlapped :public ShkOverlapped, CTheadFuncBase
+{
+public:
+    SendOverlapped() :m_operator(ESend), m_woker(this, &SendOverlapped::SendWorker)
+    {
+        memset(&m_overlapped, 0, sizeof(m_overlapped));
+        m_buffer.resize(1024 * 256);
+    }
+    int SendWorker()
+    {
+    }
+};
+typedef SendOverlapped<ESend> SENDOVERLAPPED;
+
+template<OPERATOR>
+class ErrorOverlapped :public ShkOverlapped, CTheadFuncBase
+{
+public:
+    ErrorOverlapped();
+    int ErrorWorker();
+};
+typedef ErrorOverlapped<EError> ErrorOVERLAPPED;
+
+
+class ShkClient
+{
+
+
+public:
+    ShkClient();
+    ~ShkClient();
+
+    void SetOverlapped(PCLIENT& ptr);
+
+    operator SOCKET();
+
+
+    operator PVOID();
+    operator LPOVERLAPPED();
+    operator LPDWORD();
+
+public:
+    SOCKET m_sock;
+    std::vector<char> m_buffer;
+    sockaddr m_localAddr;
+    sockaddr m_remoteAddr;
+    bool m_isBusy;
+    DWORD m_received;
+    std::shared_ptr<ACCEPTOVERLAPPED>  m_overlapped;
+
+
+};
 
 class CIOCPServer :
     public CTheadFuncBase
 {
 public:
-    CIOCPServer(const std::string ip = "0.0.0.0", short port = 9527) :m_pool(10)
-    {
-        
-        m_sock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-        int opt = 1;
-        setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
-        sockaddr_in addr;
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        addr.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
-        if (bind(m_sock, (sockaddr*)&addr, sizeof(sockaddr)) == -1)
-        {
-            closesocket(m_sock);
-            m_sock = INVALID_SOCKET;
-            return;
-        }
-        if (listen(m_sock, 3) == -1)
-        {
-            closesocket(m_sock);
-            m_sock = INVALID_SOCKET;
-            return;
-        }
-        m_hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 4);
-        if (m_hIOCP == NULL)
-        {
-            closesocket(m_sock);
-            m_sock = INVALID_SOCKET;
-            m_hIOCP = INVALID_HANDLE_VALUE;
-            return;
-        }
-        CreateIoCompletionPort((HANDLE)m_sock, m_hIOCP, (ULONG_PTR)this, 0);
-        m_pool.DispatchWorker(CThreadWorker(this, (FUNCTYPE)&CIOCPServer::ThreadIOCP));
+    CIOCPServer(const std::string ip = "0.0.0.0", short port = 9527);
+    ~CIOCPServer();
+    bool StartServer();
+    int AcceptClient();
+    bool NewAccept();
 
-    };
-    ~CIOCPServer() {};
 private:
-    int ThreadIOCP()
-    {
-        DWORD tranferred = 0;
-        ULONG_PTR CompletionKey = 0;
-        OVERLAPPED* lpOverlapped = NULL;
-        if (GetQueuedCompletionStatus(m_hIOCP, &tranferred, &CompletionKey, &lpOverlapped, INFINITE))
-        {
-            if (tranferred > 0 && CompletionKey != 0)
-            {
-                ShkOverlapped* pOverlapped = CONTAINING_RECORD(lpOverlapped, ShkOverlapped, m_overlapped);
-                if (pOverlapped->m_operator)
-                {
+    void CreateSocket();
+    int ThreadIOCP();
+   
 
-                }
-            }
-            
 
-        }
-        
-    }
 private:
     CTheadPool m_pool;
     HANDLE m_hIOCP;
     SOCKET m_sock;
     std::map<SOCKET, std::shared_ptr<ShkClient>> m_mapClient;
-};
+    CSafeQueue<ShkClient> m_lstClient;
+    sockaddr_in m_addr;
+    
 
+};

@@ -28,6 +28,7 @@ CThreadWorker& CThreadWorker::operator=(const CThreadWorker& worker)
 	}
 	return *this;
 }
+
 int CThreadWorker::operator()()
 {
 	if (IsValid())
@@ -36,7 +37,7 @@ int CThreadWorker::operator()()
 	}
 	return -1;
 }
-bool CThreadWorker::IsValid()
+bool CThreadWorker::IsValid() const
 {
 	return thiz != NULL && func != NULL;
 }

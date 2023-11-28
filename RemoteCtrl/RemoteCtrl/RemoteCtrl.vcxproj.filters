@@ -54,9 +54,6 @@
     <ClInclude Include="ThreadWorker.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadFuncBase.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="IOCPServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -89,7 +86,7 @@
     <ClCompile Include="ThreadWorker.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ThreadFuncBase.cpp">
+    <ClCompile Include="IOCPServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

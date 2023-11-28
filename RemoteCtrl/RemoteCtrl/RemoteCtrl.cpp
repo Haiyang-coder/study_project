@@ -12,6 +12,7 @@
 #include<conio.h>
 #include"SafeQueue.h"
 #include<MSWSock.h> 
+#include"IOCPServer.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -140,7 +141,7 @@ void RunAdmin()
         showError();
         TRACE("创建进程失败");
     }
-    WaitForSingleObject(pi.hProcess, INFINITY);
+    WaitForSingleObject(pi.hProcess, INFINITE);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
@@ -195,7 +196,9 @@ void test()
 
 int main()
 {
-   
+    CIOCPServer server;
+    server.StartServer();
+    getchar();
     //if (!Init())
     //{
     //    return 1;

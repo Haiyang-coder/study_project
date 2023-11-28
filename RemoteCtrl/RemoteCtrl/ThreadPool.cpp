@@ -13,6 +13,20 @@ CThreadRemote::~CThreadRemote()
 	Stop();
 }
 
+CThreadRemote::CThreadRemote(const CThreadRemote& s)
+{
+	if (this == &s)
+	{
+		return;
+	}
+	else
+	{
+		m_hThread = s.m_hThread;
+	}
+
+}
+
+
 bool CThreadRemote::boolIsValid()
 {
 	if (m_hThread == NULL || m_hThread == INVALID_HANDLE_VALUE)
@@ -44,17 +58,33 @@ bool CThreadRemote::Stop()
 		return true;
 	}
 	m_bStatus = false;
-	return WaitForSingleObject(m_hThread, INFINITE) == WAIT_OBJECT_0;
+	bool ret = WaitForSingleObject(m_hThread, INFINITE) == WAIT_OBJECT_0;
+	UpdateWorker();
+	
+	return ret;
 }
 
 void CThreadRemote::UpdateWorker(const CThreadWorker& woker)
 {
-	m_worker.store(woker);
+	if (!woker.IsValid())
+	{
+		m_pWorker.store(NULL);
+		return;
+	}
+		
+	if (m_pWorker.load() != NULL)
+	{
+		CThreadWorker* pWorker = m_pWorker.load();
+		m_pWorker.store(NULL);
+		delete pWorker;
+	}
+	m_pWorker.store(new CThreadWorker(woker));
+	
 }
 
 bool CThreadRemote::Isdle()
 {//true空闲， false:已经分配了工作
-	return !m_worker.load().IsValid();
+	return !m_pWorker.load()->IsValid();
 }
 
 void CThreadRemote::TheadEntry(void* arg)
@@ -71,7 +101,7 @@ void CThreadRemote::ThreadWorker()
 {
 	while (m_bStatus)
 	{
-		CThreadWorker worker = m_worker.load();
+		CThreadWorker worker = *m_pWorker.load();
 		if (worker.IsValid())
 		{
 			int ret = worker();
@@ -81,7 +111,7 @@ void CThreadRemote::ThreadWorker()
 			}
 			if (ret < 0)
 			{
-				m_worker.store(CThreadWorker());
+				m_pWorker.store(NULL);
 
 			}
 		}
@@ -97,6 +127,10 @@ void CThreadRemote::ThreadWorker()
 CTheadPool::CTheadPool(size_t size)
 {
 	m_vecThead.resize(size);
+	for (size_t i = 0; i < size; i++)
+	{
+		m_vecThead[i] = new CThreadRemote();
+	}
 }
 
 CTheadPool::CTheadPool()
@@ -114,7 +148,7 @@ bool CTheadPool::Invoke()
 	int ret = false;
 	for (size_t i = 0; i < m_vecThead.size(); i++)
 	{
-		if (m_vecThead[i].Start() == false) 
+		if (m_vecThead[i]->Start() == false) 
 		{
 			ret = false;
 			break;
@@ -124,7 +158,7 @@ bool CTheadPool::Invoke()
 	{
 		for (size_t i = 0; i < m_vecThead.size(); i++)
 		{
-			m_vecThead[i].Stop();
+			m_vecThead[i]->Stop();
 		}
 	}
 	return ret;
@@ -134,7 +168,7 @@ void CTheadPool::Stop()
 {
 	for (size_t i = 0; i < m_vecThead.size(); i++)
 	{
-		m_vecThead[i].Stop();
+		m_vecThead[i]->Stop();
 	}
 }
 //返回-1表示分配失败 大于等于0 表示第n个线程分配来做这件事情
@@ -144,10 +178,10 @@ int CTheadPool::DispatchWorker(const CThreadWorker& woker)
 	int index = -1;
 	for (size_t i = 0; i < m_vecThead.size(); i++)
 	{
-		if (m_vecThead[i].Isdle())
+		if (m_vecThead[i]->Isdle())
 		{
 			index = i;
-			m_vecThead[i].UpdateWorker(woker);
+			m_vecThead[i]->UpdateWorker(woker);
 			break;
 		}
 	}
