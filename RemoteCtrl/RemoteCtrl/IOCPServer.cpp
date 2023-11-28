@@ -39,7 +39,12 @@ int AcceptOverlapped<op>::AcceptWorker()
 	if (m_client->m_received > 0)
 	{
 		GetAcceptExSockaddrs(*m_client, 0, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, (sockaddr**)&m_client->m_localAddr, &lLength, (sockaddr**)&m_client->m_remoteAddr, &rLength);
-
+		
+		int ret = WSARecv((SOCKET)*m_client, m_client->RecvWSAbuffer(), 1, *m_client, &m_client->Getflags(), *m_client, NULL);
+		if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
+		{
+			//todo 报错
+		}
 		if (!m_server->NewAccept())
 		{
 			return -2;
@@ -175,12 +180,15 @@ ShkClient::operator LPOVERLAPPED()
 	return &m_overlapped->m_overlapped;
 }
 
-ShkClient::ShkClient() :m_overlapped(new ACCEPTOVERLAPPED())
+ShkClient::ShkClient() :m_overlapped(new ACCEPTOVERLAPPED()),
+m_RecvOverlapped(new RECVOVERLAPPED()),
+m_SendOverlapped(new SENDOVERLAPPED())
 {
 	m_sock = WSASocket(PF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 	m_buffer.resize(1024);
 	memset(&m_localAddr, 0, sizeof(m_localAddr));
 	m_isBusy = false;
+	m_flags = 0;
 }
 
 ShkClient::~ShkClient()
@@ -191,6 +199,8 @@ ShkClient::~ShkClient()
 void ShkClient::SetOverlapped(PCLIENT& ptr)
 {
 	m_overlapped->m_client = ptr;
+	m_RecvOverlapped->m_client = ptr;
+	m_SendOverlapped->m_client = ptr;
 }
 
 ShkClient::operator SOCKET()
@@ -208,6 +218,50 @@ ShkClient::operator LPDWORD()
 	return &m_received;
 }
 
+LPWSABUF ShkClient::RecvWSAbuffer()
+{
+	return &m_RecvOverlapped->m_wsaBuffer;
+}
+
+LPWSABUF ShkClient::SendWSAbuffer()
+{
+	return &m_SendOverlapped->m_wsaBuffer;
+}
+
+
+
+sockaddr_in* ShkClient::GetLocalAddr()
+{
+	return &m_localAddr;
+}
+
+sockaddr_in* ShkClient::GetRemoteAddr()
+{
+	return &m_remoteAddr;
+}
+
+size_t ShkClient::GetBufferSize() const
+{
+	return m_buffer.size();
+}
+
+int ShkClient::Recv()
+{
+	int length = recv(m_sock, m_buffer.data() + m_used, m_buffer.size() - m_used, 0);
+	if (length <= 0)
+	{
+		return -1;
+	}
+	m_used += (size_t)length;
+	//todo:有一个解析数据还没有完成
+	return 0;
+}
+
+DWORD& ShkClient::Getflags()
+{
+	return m_flags;
+}
+
 
 template<OPERATOR op>
 ErrorOverlapped<op>::ErrorOverlapped() {
@@ -219,6 +273,37 @@ ErrorOverlapped<op>::ErrorOverlapped() {
 
 template<OPERATOR op>
 int ErrorOverlapped<op>::ErrorWorker()
+{
+	return 0;
+}
+
+template<OPERATOR op>
+RecvOverlapped<op>::RecvOverlapped()
+{
+	m_operator = ERecv;
+	m_woker = CThreadWorker(this, (FUNCTYPE)&RecvOverlapped::RecvWorker);
+	memset(&m_overlapped, 0, sizeof(m_overlapped));
+	m_buffer.resize(1024 * 256);
+}
+
+template<OPERATOR op>
+int RecvOverlapped<op>::RecvWorker()
+{
+	int ret = m_client->Recv();
+	return ret;
+}
+
+template<OPERATOR op>
+SendOverlapped<op>::SendOverlapped()
+{
+	m_operator = ESend;
+	m_woker = CThreadWorker(this, (FUNCTYPE)&SendOverlapped::SendWorker);
+	memset(&m_overlapped, 0, sizeof(m_overlapped));
+	m_buffer.resize(1024 * 256);
+}
+
+template<OPERATOR op>
+int SendOverlapped<op>::SendWorker()
 {
 	return 0;
 }

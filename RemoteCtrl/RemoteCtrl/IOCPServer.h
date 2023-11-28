@@ -26,10 +26,12 @@ public:
     ~ShkOverlapped();
 public:
     OVERLAPPED m_overlapped;
-    OPERATOR m_operator;
-    std::vector<char> m_buffer;
-    CThreadWorker m_woker;
+    OPERATOR m_operator;//操作
+    std::vector<char> m_buffer;//缓冲区
+    CThreadWorker m_woker;//工作线程
     CIOCPServer* m_server;//服务器对象
+    PCLIENT m_client;//对应的客户端
+    WSABUF m_wsaBuffer;
     
 
 };
@@ -44,8 +46,6 @@ public:
     AcceptOverlapped();
     int AcceptWorker();
     
-public:
-    PCLIENT m_client;
 };
 typedef AcceptOverlapped<EAccept> ACCEPTOVERLAPPED;
 
@@ -53,14 +53,8 @@ template<OPERATOR>
 class RecvOverlapped :public ShkOverlapped, CTheadFuncBase
 {
 public:
-    RecvOverlapped() :m_operator(ERecv), m_woker(this, &RecvOverlapped::RecvWorker)
-    {
-        memset(&m_overlapped, 0, sizeof(m_overlapped));
-        m_buffer.resize(1024 * 256);
-    }
-    int  RecvWorker()
-    {
-    }
+    RecvOverlapped();
+    int  RecvWorker();
 };
 typedef RecvOverlapped<ERecv> RECVOVERLAPPED;
 
@@ -68,14 +62,8 @@ template<OPERATOR>
 class SendOverlapped :public ShkOverlapped, CTheadFuncBase
 {
 public:
-    SendOverlapped() :m_operator(ESend), m_woker(this, &SendOverlapped::SendWorker)
-    {
-        memset(&m_overlapped, 0, sizeof(m_overlapped));
-        m_buffer.resize(1024 * 256);
-    }
-    int SendWorker()
-    {
-    }
+    SendOverlapped();
+    int SendWorker();
 };
 typedef SendOverlapped<ESend> SENDOVERLAPPED;
 
@@ -105,15 +93,26 @@ public:
     operator PVOID();
     operator LPOVERLAPPED();
     operator LPDWORD();
-
+    LPWSABUF RecvWSAbuffer();
+    LPWSABUF SendWSAbuffer();
+    sockaddr_in* GetLocalAddr();
+    sockaddr_in* GetRemoteAddr();
+    size_t GetBufferSize() const;
+    int Recv();
+    DWORD& Getflags();
+    
 public:
     SOCKET m_sock;
     std::vector<char> m_buffer;
-    sockaddr m_localAddr;
-    sockaddr m_remoteAddr;
+    sockaddr_in m_localAddr;
+    sockaddr_in m_remoteAddr;
     bool m_isBusy;
+    size_t m_used;//已经使用的缓冲区大小
     DWORD m_received;
     std::shared_ptr<ACCEPTOVERLAPPED>  m_overlapped;
+    DWORD m_flags;
+    std::shared_ptr<RECVOVERLAPPED> m_RecvOverlapped;
+    std::shared_ptr<SENDOVERLAPPED> m_SendOverlapped;
 
 
 };
@@ -144,3 +143,5 @@ private:
     
 
 };
+
+
