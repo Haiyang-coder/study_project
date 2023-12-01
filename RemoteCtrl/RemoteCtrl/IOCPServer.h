@@ -23,23 +23,22 @@ class ShkOverlapped
 {
 public:
     ShkOverlapped();
-    ~ShkOverlapped();
+    virtual ~ShkOverlapped();
 public:
     OVERLAPPED m_overlapped;
     OPERATOR m_operator;//操作
     std::vector<char> m_buffer;//缓冲区
     CThreadWorker m_woker;//工作线程
     CIOCPServer* m_server;//服务器对象
-    PCLIENT m_client;//对应的客户端
+    ShkClient* m_client;//对应的客户端
     WSABUF m_wsaBuffer;
-    
 
 };
 
 
 
 template<OPERATOR>
-class AcceptOverlapped :public ShkOverlapped, CTheadFuncBase
+class AcceptOverlapped :public ShkOverlapped, CThreadFuncBase
 {
 public:
     AcceptOverlapped(PCLIENT& client);
@@ -50,7 +49,7 @@ public:
 typedef AcceptOverlapped<EAccept> ACCEPTOVERLAPPED;
 
 template<OPERATOR>
-class RecvOverlapped :public ShkOverlapped, CTheadFuncBase
+class RecvOverlapped :public ShkOverlapped, CThreadFuncBase
 {
 public:
     RecvOverlapped();
@@ -59,7 +58,7 @@ public:
 typedef RecvOverlapped<ERecv> RECVOVERLAPPED;
 
 template<OPERATOR>
-class SendOverlapped :public ShkOverlapped, CTheadFuncBase
+class SendOverlapped :public ShkOverlapped, CThreadFuncBase
 {
 public:
     SendOverlapped();
@@ -68,7 +67,7 @@ public:
 typedef SendOverlapped<ESend> SENDOVERLAPPED;
 
 template<OPERATOR>
-class ErrorOverlapped :public ShkOverlapped, CTheadFuncBase
+class ErrorOverlapped :public ShkOverlapped, CThreadFuncBase
 {
 public:
     ErrorOverlapped();
@@ -76,8 +75,7 @@ public:
 };
 typedef ErrorOverlapped<EError> ErrorOVERLAPPED;
 
-
-class ShkClient
+class ShkClient:public CThreadFuncBase
 {
 
 
@@ -88,8 +86,6 @@ public:
     void SetOverlapped(PCLIENT& ptr);
 
     operator SOCKET();
-
-
     operator PVOID();
     operator LPOVERLAPPED();
     operator LPDWORD();
@@ -99,8 +95,9 @@ public:
     sockaddr_in* GetRemoteAddr();
     size_t GetBufferSize() const;
     int Recv();
+    int Send(void* buffer, size_t nSize);
     DWORD& Getflags();
-    
+    int SendData(std::vector<char>& data);
 public:
     SOCKET m_sock;
     std::vector<char> m_buffer;
@@ -113,12 +110,11 @@ public:
     DWORD m_flags;
     std::shared_ptr<RECVOVERLAPPED> m_RecvOverlapped;
     std::shared_ptr<SENDOVERLAPPED> m_SendOverlapped;
-
-
+    CSafeSendQueue<std::vector<char>>* m_SafeQueueVecSendBuffer;//发送数据队列
 };
 
 class CIOCPServer :
-    public CTheadFuncBase
+    public CThreadFuncBase
 {
 public:
     CIOCPServer(const std::string ip = "0.0.0.0", short port = 9527);

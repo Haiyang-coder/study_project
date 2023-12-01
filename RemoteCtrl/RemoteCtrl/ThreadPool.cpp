@@ -58,32 +58,42 @@ bool CThreadRemote::Stop()
 		return true;
 	}
 	m_bStatus = false;
-	bool ret = WaitForSingleObject(m_hThread, INFINITE) == WAIT_OBJECT_0;
+	DWORD ret = WaitForSingleObject(m_hThread, 1000);
+	if (ret == WAIT_TIMEOUT)
+	{
+		TerminateThread(m_hThread, -1);
+	}
 	UpdateWorker();
 	
-	return ret;
+	return ret == WAIT_OBJECT_0;
 }
 
 void CThreadRemote::UpdateWorker(const CThreadWorker& woker)
 {
+	if (m_pWorker.load() != NULL && m_pWorker.load() != &woker)
+	{
+		CThreadWorker* pWorker = m_pWorker.load();
+		m_pWorker.store(NULL);
+		delete pWorker;
+	}
+	if (m_pWorker.load() == &woker) return;
 	if (!woker.IsValid())
 	{
 		m_pWorker.store(NULL);
 		return;
 	}
 		
-	if (m_pWorker.load() != NULL)
-	{
-		CThreadWorker* pWorker = m_pWorker.load();
-		m_pWorker.store(NULL);
-		delete pWorker;
-	}
+	
 	m_pWorker.store(new CThreadWorker(woker));
 	
 }
 
 bool CThreadRemote::Isdle()
 {//true空闲， false:已经分配了工作
+	if (m_pWorker.load() == NULL)
+	{
+		return true;
+	}
 	return !m_pWorker.load()->IsValid();
 }
 
@@ -101,6 +111,11 @@ void CThreadRemote::ThreadWorker()
 {
 	while (m_bStatus)
 	{
+		if (m_pWorker.load() == NULL)
+		{
+			Sleep(1);
+			continue;
+		}
 		CThreadWorker worker = *m_pWorker.load();
 		if (worker.IsValid())
 		{
@@ -140,6 +155,11 @@ CTheadPool::CTheadPool()
 CTheadPool::~CTheadPool()
 {
 	Stop();
+	for (size_t i = 0; i < m_vecThead.size(); i++)
+	{
+		delete m_vecThead[i];
+		m_vecThead[i] = NULL;
+	}
 	m_vecThead.clear();
 }
 

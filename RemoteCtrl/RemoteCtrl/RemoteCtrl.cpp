@@ -13,6 +13,7 @@
 #include"SafeQueue.h"
 #include<MSWSock.h> 
 #include"IOCPServer.h"
+#include<cstring>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -193,12 +194,71 @@ void test()
     
 }
 
-
-int main()
+void udp_server()
 {
-    CIOCPServer server;
-    server.StartServer();
+    printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
     getchar();
+    Sleep(100000);
+}
+
+void udp_client(bool isHost = true)
+{
+    if (isHost)
+    {
+        printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
+    }
+    else
+    {
+        printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
+    }
+}
+
+int main(int argc, char* argv[])
+{
+    
+    if (argc == 1)//服务器
+    {
+        char wstrDir[MAX_PATH];
+        GetCurrentDirectoryA(MAX_PATH, wstrDir);
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+        memset(&si, 0, sizeof(si));
+        memset(&pi, 0, sizeof(pi));
+        std::string strCmd = argv[0];
+        strCmd += " 1";
+        BOOL bRet = CreateProcessA(NULL, (LPSTR)strCmd.c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, wstrDir, &si, &pi);
+        if (bRet)
+        {
+            TRACE("进程ID:%d\r\n", pi.dwProcessId);
+            TRACE("线程ID:%d\r\n", pi.dwThreadId);
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            strCmd += " 2";
+            bRet = CreateProcessA(NULL, (LPSTR)strCmd.c_str(), NULL, NULL, FALSE, CREATE_NEW_CONSOLE, NULL, wstrDir, &si, &pi);
+            if (bRet)
+            {
+                TRACE("进程ID:%d\r\n", pi.dwProcessId);
+                TRACE("线程ID:%d\r\n", pi.dwThreadId);
+                CloseHandle(pi.hThread);
+                CloseHandle(pi.hProcess);
+                strCmd += " 2";
+                udp_server();
+            }
+        }
+
+    }
+    else if(argc == 2)//主客户端
+    {
+        udp_client();
+    }
+    else
+    {//从客户端
+        udp_client(false);
+    }
+
+
+
+
     //if (!Init())
     //{
     //    return 1;

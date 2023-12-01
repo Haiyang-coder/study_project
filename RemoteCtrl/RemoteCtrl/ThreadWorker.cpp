@@ -5,7 +5,7 @@ CThreadWorker::CThreadWorker():thiz(NULL),func(NULL)
 {
 }
 
-CThreadWorker::CThreadWorker(CTheadFuncBase* obj, FUNCTYPE fun) :thiz(obj), func(fun)
+CThreadWorker::CThreadWorker(CThreadFuncBase* obj, FUNCTYPE fun) :thiz(obj), func(fun)
 {
 }
 

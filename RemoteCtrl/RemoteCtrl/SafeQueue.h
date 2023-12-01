@@ -5,6 +5,7 @@
 #include<thread>
 #include<mutex>
 #include<atomic>
+#include"ThreadPool.h"
 
 typedef void* (*listcallBack)(void*);
 
@@ -51,15 +52,15 @@ public:
 	//利用iocp实现的线程安全的队列
 public:
 	CSafeQueue();
-	~CSafeQueue();
+	virtual ~CSafeQueue();
 	bool PushBack(const T& data);
-	bool PopFront(T& data);
+	virtual bool PopFront(T& data);
 	size_t Size();
 	void Clear();
-private:
+protected:
 	void threadMain(HANDLE arg);
-	void DealParam(PPARAM* pParam);
-private:
+	virtual void DealParam(PPARAM* pParam);
+protected:
 	std::list<T> m_listData;
 	HANDLE m_hCompleoetionPort;
 	HANDLE m_hThread;
@@ -67,6 +68,129 @@ private:
 
 
 };
+
+
+
+template<class T>
+class CSafeSendQueue:public CSafeQueue<T>,public CThreadFuncBase
+{
+public:
+	typedef int (CThreadFuncBase::* SendCallBack)(T& data);
+	CSafeSendQueue(CThreadFuncBase* obj, SendCallBack callback);
+	virtual ~CSafeSendQueue();
+	
+protected:
+	virtual bool PopFront(T& data) 
+	{
+		return false;
+	}
+	int threadTick()
+	{
+		if (WaitForSingleObject(CSafeQueue<T>::m_hThread, 0) != WAIT_TIMEOUT)
+		{
+			return 0;
+		}
+		if (CSafeQueue<T>::m_listData.size() > 0)
+		{
+			Popfront();
+		}
+		Sleep(1);
+		return 0;
+	}
+	bool Popfront()
+	{
+		typename CSafeQueue<T>::IocpParam* Param = new typename CSafeQueue<T>::IocpParam(CSafeQueue<T>::EQPop, T());
+		if (CSafeQueue<T>::m_lock)
+		{
+			delete Param;
+			return false;
+		}
+		bool ret = PostQueuedCompletionStatus(CSafeQueue<T>::m_hCompleoetionPort, sizeof(typename CSafeQueue<T>::PPARAM), (ULONG_PTR)&Param, NULL);
+		if (ret == false)
+		{
+			delete Param;
+			return ret;
+		}
+		return ret;
+	}
+	virtual void DealParam(typename CSafeQueue<T>::PPARAM* pParam)
+	{
+		switch (pParam->nOperator)
+		{
+		case CSafeQueue<T>::EQPush:
+		{
+			CSafeQueue<T>::m_listData.push_back(pParam->Data);
+			delete pParam;
+
+		}
+		break;
+		case CSafeQueue<T>::EQPop:
+		{
+			if (CSafeQueue<T>::m_listData.size() > 0)
+			{
+				pParam->Data = CSafeQueue<T>::m_listData.front();
+				if ((m_pBase->*m_callBack)(pParam->Data) == 0)
+				{
+					CSafeQueue<T>::m_listData.pop_front();
+				}
+				
+			}
+			delete pParam;
+		}
+		break;
+		case CSafeQueue<T>::EQClear:
+		{
+			CSafeQueue<T>::m_listData.clear();
+			delete pParam;
+		}
+		break;
+		case CSafeQueue<T>::EQSize:
+		{
+			pParam->size = CSafeQueue<T>::m_listData.size();
+			if (pParam->hEvent != NULL)
+			{
+				SetEvent(pParam->hEvent);
+			}
+		}
+		break;
+		default:
+			TRACE("unkown\r\n");
+			break;
+		}
+	}
+
+
+
+private:
+	CThreadFuncBase* m_pBase;
+	SendCallBack m_callBack;
+	CThreadRemote m_thread;
+
+};
+typedef CSafeSendQueue<std::vector<char>>::SendCallBack SENDCALLBACKK;
+
+template<class T>
+inline CSafeSendQueue<T>::CSafeSendQueue(CThreadFuncBase* obj, SendCallBack callback)
+	: CSafeQueue<T>(),
+	m_pBase(obj),
+	m_callBack(callback)
+{
+	m_thread.Start();
+	m_thread.UpdateWorker(::CThreadWorker(this, (FUNCTYPE) & CSafeSendQueue<T>::threadTick));
+}
+template<class T>
+CSafeSendQueue<T>::~CSafeSendQueue()
+{
+	
+	m_pBase = NULL;
+	m_callBack = NULL;
+	m_thread.Stop();
+}
+
+
+
+
+
 
 template<class T>
 inline CSafeQueue<T>::CSafeQueue()
@@ -90,7 +214,6 @@ inline CSafeQueue<T>::~CSafeQueue()
 		return;
 	}
 	m_lock = true;
-	
 	PostQueuedCompletionStatus(m_hCompleoetionPort, 0, NULL, NULL);
 	WaitForSingleObject(m_hThread, INFINITE);
 	if (m_hCompleoetionPort != NULL)
@@ -222,6 +345,7 @@ inline void CSafeQueue<T>::threadMain(HANDLE arg)
 	CloseHandle(temp);
 	
 }
+
 
 template<class T>
 inline void CSafeQueue<T>::DealParam(PPARAM* pParam)

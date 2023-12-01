@@ -5,10 +5,12 @@
 
 ShkOverlapped::ShkOverlapped()
 {
+
 }
 
 ShkOverlapped::~ShkOverlapped()
 {
+	m_buffer.clear();
 }
 
 template<OPERATOR op>
@@ -34,9 +36,8 @@ AcceptOverlapped<op>::AcceptOverlapped()
 template<OPERATOR op>
 int AcceptOverlapped<op>::AcceptWorker()
 {
-
 	INT lLength = 0, rLength = 0;
-	if (m_client->m_received > 0)
+	if (*(LPDWORD)*m_client > 0)
 	{
 		GetAcceptExSockaddrs(*m_client, 0, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, (sockaddr**)&m_client->m_localAddr, &lLength, (sockaddr**)&m_client->m_remoteAddr, &rLength);
 		
@@ -62,6 +63,15 @@ CIOCPServer::CIOCPServer(const std::string ip, short port) :m_pool(10)
 
 CIOCPServer::~CIOCPServer()
 {
+	closesocket(m_sock);
+	auto it = m_mapClient.begin();
+	for (; it != m_mapClient.end(); it++)
+	{
+		it->second.reset();
+	}
+	m_mapClient.clear();
+	CloseHandle(m_hIOCP);
+	m_pool.Stop();
 }
 
 bool CIOCPServer::StartServer()
@@ -180,27 +190,39 @@ ShkClient::operator LPOVERLAPPED()
 	return &m_overlapped->m_overlapped;
 }
 
-ShkClient::ShkClient() :m_overlapped(new ACCEPTOVERLAPPED()),
+ShkClient::ShkClient() 
+:m_overlapped(new ACCEPTOVERLAPPED()),
 m_RecvOverlapped(new RECVOVERLAPPED()),
 m_SendOverlapped(new SENDOVERLAPPED())
+//m_SafeQueueVecSendBuffer(this, (SENDCALLBACKK)&ShkClient::SendData)
 {
+	
+	m_SafeQueueVecSendBuffer = new CSafeSendQueue<std::vector<char>>(this, (SENDCALLBACKK)&ShkClient::SendData);
 	m_sock = WSASocket(PF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 	m_buffer.resize(1024);
 	memset(&m_localAddr, 0, sizeof(m_localAddr));
+	memset(&m_remoteAddr, 0, sizeof(m_remoteAddr));
 	m_isBusy = false;
 	m_flags = 0;
 }
 
 ShkClient::~ShkClient()
 {
+	m_buffer.clear();
 	closesocket(m_sock);
+	m_RecvOverlapped.reset();
+	m_SendOverlapped.reset();
+	m_overlapped.reset();
+	m_SafeQueueVecSendBuffer->Clear();
+	//todo delete m_safe
+	
 }
 
 void ShkClient::SetOverlapped(PCLIENT& ptr)
 {
-	m_overlapped->m_client = ptr;
-	m_RecvOverlapped->m_client = ptr;
-	m_SendOverlapped->m_client = ptr;
+	m_overlapped->m_client = ptr.get();
+	m_RecvOverlapped->m_client = ptr.get();
+	m_SendOverlapped->m_client = ptr.get();
 }
 
 ShkClient::operator SOCKET()
@@ -257,9 +279,32 @@ int ShkClient::Recv()
 	return 0;
 }
 
+int ShkClient::Send(void* buffer, size_t nSize)
+{
+	std::vector<char> data(nSize);
+	memcpy(data.data(), buffer, nSize);
+	if (m_SafeQueueVecSendBuffer->PushBack(data))
+	{
+		return 0;
+	}
+	return -1;
+}
+
 DWORD& ShkClient::Getflags()
 {
 	return m_flags;
+}
+
+int ShkClient::SendData(std::vector<char>& data)
+{
+	if (m_SafeQueueVecSendBuffer->Size() > 0)
+	{
+		int ret = WSASend(m_sock, SendWSAbuffer(), 1, &m_received, m_flags, &m_SendOverlapped->m_overlapped, NULL);
+		if (ret != 0 && WSAGetLastError() != WSA_IO_PENDING)
+		{
+			return -1;
+		}
+	}
 }
 
 
@@ -305,5 +350,6 @@ SendOverlapped<op>::SendOverlapped()
 template<OPERATOR op>
 int SendOverlapped<op>::SendWorker()
 {
+	//send可能不会立即发送完成WSA_IO_PENDING(正在处理状态)
 	return 0;
 }
