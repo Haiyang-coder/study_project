@@ -15,6 +15,7 @@
 #include"IOCPServer.h"
 #include<cstring>
 #include<list>
+#include"ESocket.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -207,45 +208,41 @@ void udp_server()
 {
    
     TRACE("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
-    SOCKET sock = socket(PF_INET, SOCK_DGRAM, 0);
-    if(sock == INVALID_SOCKET)
+    //SOCKET sock = socket(PF_INET, SOCK_DGRAM, 0);
+    ESOCKET sock(new ESocket(ETypteUDP));
+    if(*sock == INVALID_SOCKET)
     {
         perror("sock error");
         return;
     }
-    sockaddr_in server, client;
-    std::list<sockaddr_in> m_lstClient;
-    memset(&server, 0, sizeof(server));
-    memset(&client, 0, sizeof(client));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(20000);
-    server.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    if (-1 == bind(sock, (sockaddr*)&server, sizeof(sockaddr)))
+    std::list<ESockaddrIn> m_lstClient;
+    
+    ESockaddrIn  client;
+    if (-1 == sock->bind("127.0.0.1", 20000))
     {
         printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
-        closesocket(sock);
         return;
     }
 
 
-    std::string buffer;
+    EBuffer buffer(1024 * 256);
     int len = sizeof(client);
     int ret = 0;
     while (!_kbhit())
     {
-        int ret = recvfrom(sock, (char*)buffer.data(), sizeof(buffer), 0, (sockaddr*)&client, &len);
+        int ret = sock->recvfrom( buffer,  client);
         if (ret > 0)
         {
             if (m_lstClient.size() <= 0)
             {
                 m_lstClient.push_back(client);
-                printf("%s(%d):%s,  ip:%08X port：%d\r\n", __FILE__, __LINE__, __FUNCTION__, client.sin_addr.S_un.S_addr, ntohs(client.sin_port));
-                sendto(sock, buffer.data(), ret, 0, (sockaddr*)&client, sizeof(client));
+                printf("%s(%d):%s,  ip:%s port：%d\r\n", __FILE__, __LINE__, __FUNCTION__, client.GetIP().c_str(), client.GetPort());
+                sock->sendto( buffer, client);
             }
             else
             {
-                memcpy((void*)buffer.data(), &m_lstClient.front(), sizeof(m_lstClient.front()));
-                ret = sendto(sock, buffer.data(), ret, 0, (sockaddr*)&client, sizeof(client));
+                buffer.Update((void*)&m_lstClient.front(), m_lstClient.front().size());
+                ret = sock->sendto( buffer, client);
             }
             Sleep(1);
         }
@@ -256,7 +253,6 @@ void udp_server()
         }
         Sleep(10);
     }
-    closesocket(sock);
     printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
 
 }
@@ -264,8 +260,9 @@ void udp_server()
 void udp_client(bool isHost = true)
 {
     Sleep(2000);
-    SOCKET sock = socket(PF_INET, SOCK_DGRAM, 0);
+    //SOCKET sock = socket(PF_INET, SOCK_DGRAM, 0);
     sockaddr_in addr;
+    ESOCKET sock(new ESocket(ETypteUDP));
     
     sockaddr_in client;
     int len = sizeof(client);
@@ -273,7 +270,7 @@ void udp_client(bool isHost = true)
     addr.sin_family = AF_INET;
     addr.sin_port = htons(20000);
     addr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    if (sock == INVALID_SOCKET)
+    if (*sock == INVALID_SOCKET)
     {
         TRACE("sock error");
         return;
@@ -282,15 +279,15 @@ void udp_client(bool isHost = true)
     if (isHost)//主客户端
     {
         printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
-        std::string message = "hello world\n";
-        int ret = sendto(sock, message.data(), message.length(), 0, (sockaddr*)&addr, sizeof(addr));
+        EBuffer message = "hello world\n";
+        int ret = sendto(*sock, message.data(), message.length(), 0, (sockaddr*)&addr, sizeof(addr));
         printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
         if(ret)
         {
             message.resize(1024);
             memset((char*)message.data(), 0, message.size());
             memset(&addr, 0, sizeof(addr));
-            ret = recvfrom(sock, (char*)message.data(), message.size(), 0, (sockaddr*)&client, &len);
+            ret = recvfrom(*sock, (char*)message.data(), message.size(), 0, (sockaddr*)&client, &len);
             printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
             if (ret > 0)
             {
@@ -303,13 +300,13 @@ void udp_client(bool isHost = true)
     {
         printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
         std::string message = "hello world\n";
-        int ret = sendto(sock, message.data(), message.length(), 0, (sockaddr*)&addr, sizeof(addr));
+        int ret = sendto(*sock, message.data(), message.length(), 0, (sockaddr*)&addr, sizeof(addr));
         printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
         if (ret > 0)
         {
             message.resize(1024);
             memset((char*)message.data(), 0, message.size());
-            ret = recvfrom(sock, (char*)message.data(), message.size(), 0, (sockaddr*)&client, &len);
+            ret = recvfrom(*sock, (char*)message.data(), message.size(), 0, (sockaddr*)&client, &len);
             printf("%s(%d):%s\r\n", __FILE__, __LINE__, __FUNCTION__);
             if (ret > 0)
             {
@@ -320,12 +317,11 @@ void udp_client(bool isHost = true)
                 std::cout << "收到了 内网穿透之后的 另一端的ip和端口，他们是:" << std::endl;
                 printf("%s(%d):%s,  ip:%08X port：%d\r\n", __FILE__, __LINE__, __FUNCTION__, paddr->sin_addr.S_un.S_addr, ntohs(paddr->sin_port));
                 message = "hello im client";
-                ret = sendto(sock, message.data(), message.length(), 0, (sockaddr*)&paddr, sizeof(paddr));
+                ret = sendto(*sock, message.data(), message.length(), 0, (sockaddr*)&paddr, sizeof(paddr));
 
             }
         }
     }
-    closesocket(sock); 
     while (!_kbhit())
     {
         Sleep(10);

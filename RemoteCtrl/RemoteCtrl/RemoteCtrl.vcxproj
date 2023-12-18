@@ -142,7 +142,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ESocket.h" />
     <ClInclude Include="IOCPServer.h" />
+    <ClInclude Include="NetWork.h" />
     <ClInclude Include="ThreadWorker.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Command.h" />
@@ -159,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IOCPServer.cpp" />
+    <ClCompile Include="NetWork.cpp" />
     <ClCompile Include="ThreadWorker.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="Command.cpp" />
