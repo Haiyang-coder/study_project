@@ -5,7 +5,7 @@
 #include "pch.h"
 #include "framework.h"
 #include "RemoteClient.h"
-#include "RemoteClientDlg.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,6 +40,7 @@ CRemoteClientApp theApp;
 
 BOOL CRemoteClientApp::InitInstance()
 {
+	//_CrtSetBreakAlloc(803);
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
 	//则需要 InitCommonControlsEx()。  否则，将无法创建窗口。
@@ -51,7 +52,7 @@ BOOL CRemoteClientApp::InitInstance()
 	InitCommonControlsEx(&InitCtrls);
 
 	CWinApp::InitInstance();
-
+	
 
 	AfxEnableControlContainer();
 
@@ -71,9 +72,8 @@ BOOL CRemoteClientApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-	CRemoteClientDlg dlg;
-	m_pMainWnd = &dlg;
-	INT_PTR nResponse = dlg.DoModal();
+	CClientController::getInstance()->InitController();
+	INT_PTR nResponse = CClientController::getInstance()->Invoke(m_pMainWnd);
 	if (nResponse == IDOK)
 	{
 		// TODO: 在此放置处理何时用
@@ -93,6 +93,7 @@ BOOL CRemoteClientApp::InitInstance()
 	// 删除上面创建的 shell 管理器。
 	if (pShellManager != nullptr)
 	{
+		TRACE("pShellManager over\r\n");
 		delete pShellManager;
 	}
 
